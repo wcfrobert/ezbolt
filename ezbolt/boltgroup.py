@@ -2,45 +2,70 @@ import ezbolt.bolt
 import math
 import itertools
 import pandas as pd
-import numpy as np
+
 
 class BoltGroup:
     """
-    Bolt group object definition
+    BoltGroup object represents a configuration of bolts. It contains attributes such as
+    the bolt group's geometric properties and results from three bolt force calculation methods:
+        1. Elastic Method - Superposition
+        2. Elastic Method - Center of Rotation
+        3. Instant Center of Rotation Method
     
     Input Arguments:
         None               
         
-    Attributes:
-        bolts
-        N_bolts
-        x_cg
-        y_cg
-        Ix
-        Iy
-        Iz
-        rn
+    Attributes: 
+        (units = kip, in unless otherwise noted)
         
-        Vx
-        Vy
-        V_resultant
-        torsion
-        ecc
-        theta
-        
-        ICR_xi
-        ICR_yi
-        ICR_Ci
-        sumFx
-        sumFy
-        sumMz
-        
+        bolts (list(obj)):              - List of bolt objects
+        N_bolt (int):                   - number of bolts
+        x_cg (float):                   - bolt group centroid X coordiante
+        y_cg (float):                   - bolt group centroid Y coordiante
+        Ix (float):                     - moment of inertia about the x-axis
+        Iy (float):                     - moment of inertia about the y-axis
+        Ixy (float):                    - product of inertia
+        Iz (float):                     - moment of inertia about the z-axis (also known as Ip or J)
+        results (dict):                 - a dictionary storing all critical calculation results
+
+        Vx (float):                     - applied shear force in X direction
+        Vy (float):                     - applied shear force in Y direction
+        theta (float):                  - angle of applied force vector with respect to horizontal
+        V_resultant (float):            - resultant applied shear force
+        torsion (float):                - applied in-plane moment
+        ecc (float):                    - eccentricity. Distance between CG and point of applied load
+        ecc_x (float):                  - Eccentricity x component
+        ecc_y (float):                  - Eccentricity y component
+        bolt_capacity (float):          - bolt capacity
+        bolt_demand (float):            - bolt demand (elastic method - superposition)
+
+        ecc_ECRx (float):               - eccentricity x component (ECR method)
+        ecc_ECRy (float):               - eccentricity y component (ECR method)
+        ecc_ECR (float):                - eccentricity. Distance between ECR and point of applied load
+        ECR_ax (float):                 - x direction increment from CoG to ECR
+        ECR_ay (float):                 - y direction increment from CoG to ECR
+        ECR_x (float):                  - x-coordinate for ECR
+        ECR_y (float):                  - y-coordinate for ECR
+        Ce (float):                     - connection capacity coefficient (ECR method)
+        P_demand (float):               - connection demand = V_resultant
+        P_capacity (float):             - connection capacity = bolt_capacity * Ce
+
+        ecc_ICRx (list(float)):         - Eccentricity for ICR method along the x-axis.
+        ecc_ICRy (list(float)):         - Eccentricity for ICR method along the y-axis.
+        ecc_ICR (list(float)):          - Eccentricity for ICR method.
+        ICR_ax (list(float)):           - Axial force for ICR method.
+        ICR_ay (list(float)):           - Shear force for ICR method.
+        ICR_x (list(float)):            - X-coordinate for ICR method.
+        ICR_y (list(float)):            - Y-coordinate for ICR method.
+        Cu (list(float)):               - Eccentricity coefficient for ICR method.
+        P_demand_ICR (float):           - Demand on axial force for ICR method.
+        P_capacity_ICR (float):         - Capacity of axial force for ICR method.
+        ICR_table (list(dataframe)):    - List containing ICR method table data.
+
     Public Methods:
-        add_bolt(x, y)
-        solve(Vx, Vy, torsion, rn)
-        preview()
-        plot_forces()
-        plot_ICR(xlim, ylim, du)
+        .add_bolt_single()
+        .add_bolts()
+        .solve()
     """
     def __init__(self):
         # general geometric attributes
@@ -52,51 +77,75 @@ class BoltGroup:
         self.Iy = None
         self.Ixy = None
         self.Iz = None
+        self.results = None
         
-        # elastic method
+        # attributes common to all methods
         self.Vx = None
         self.Vy = None
+        self.theta = None
         self.V_resultant = None
         self.torsion = None
         self.ecc = None
-        self.theta = None
-        self.Vcapacity = None
-        self.Vdemand = None
-        self.result_elastic1 = None
+        self.ecc_x = None
+        self.ecc_y = None
+        self.bolt_capacity = None
+        self.bolt_demand = None
         
-        # elastic ICR method
-        self.elastic_ax = None
-        self.elastic_ay = None
-        self.elastic_ICRx = None
-        self.elastic_ICRy = None
-        self.df_results_elastic2 = None
-        
-        # instant center of rotation method
+        # ECR method
+        self.ecc_ECRx = None
+        self.ecc_ECRy = None
+        self.ecc_ECR = None
+        self.ECR_ax = None
+        self.ECR_ay = None
+        self.ECR_x = None
+        self.ECR_y = None
+        self.Ce = None
+        self.P_demand = None
+        self.P_capacity = None
+
+        # ICR method
+        self.ecc_ICRx = []
+        self.ecc_ICRy =[]
+        self.ecc_ICR = []
         self.ICR_ax = []
         self.ICR_ay = []
-        self.ICR_x = []
+        self.ICR_x =[]
         self.ICR_y = []
-        self.ICR_coeff = []
+        self.Cu = []
+        self.P_demand_ICR = None
+        self.P_capacity_ICR = None
         self.ICR_table = []
-        self.Mp = []
     
     def add_bolt_single(self, x, y):
         """
         Add a bolt at user-specified coordinate
+        
+        Args:
+            x ::float           - x coordinate of bolt
+            y ::float           - y coordinate of bolt
+            
+        Returns:
+            None
         """
         self.bolts.append(ezbolt.bolt.Bolt(self.N_bolt,x,y))
         self.N_bolt += 1
+        self.update_geometric_properties()
         
     def add_bolts(self,xo,yo,width,height,nx,ny,perimeter_only=False):
         """
-        Add a retangular array of bolts
-            xo                  x coordinate of bottom left corner
-            yo                  y coordinate of bottom left corner
-            b                   width of bolt group
-            h                   height of bolt group
-            nx                  number of bolt in x (evenly spaced)
-            ny                  number of bolt in y (evenly spaced)
-            perimeter_only      True or False. Have rebar on perimeter only or fill full array
+        Add a retangular array of bolts.
+        
+        Args:
+            xo ::float                          - x coordinate of bottom left corner
+            yo ::float                          - y coordinate of bottom left corner
+            b ::float                           - width of bolt group
+            h ::float                           - height of bolt group
+            nx ::float                          - number of bolt in x (evenly spaced)
+            ny ::float                          - number of bolt in y (evenly spaced)
+            (OPTIONAL) perimeter_only ::bool    - True or False. Have rebar on perimeter only or fill full array
+        
+        Returns:
+            None
         """
         # determine spacing
         sx = 0 if nx==1 else width / (nx-1)
@@ -129,7 +178,9 @@ class BoltGroup:
         
     def update_geometric_properties(self):
         """
-        Update bolt group geometry properties
+        Update bolt group geometry properties. Called everytime a bolt is added.
+        Recalculate center of gravity, Ix, Iy, Ixy, Iz and update bolt positions
+        with respect to the new CoG.
         """
         self.x_cg = sum([b.x / self.N_bolt for b in self.bolts])
         self.y_cg = sum([b.y / self.N_bolt for b in self.bolts])
@@ -139,76 +190,80 @@ class BoltGroup:
         self.Iz = self.Ix + self.Iy
         for bolt in self.bolts:
             bolt.update_geometry(self.x_cg, self.y_cg)
-          
-    def solve(self, Vx, Vy, torsion, bolt_capacity=17.9, verbose=True):
+    
+    def solve(self, Vx, Vy, torsion, bolt_capacity=17.9):
         """
-        Solve for bolt shear and tension demand
+        Public method called by user to solve for bolt forces using three methods:
+            1. Elastic Method - Superposition
+            2. Elastic Method - Center of Rotation
+            3. Instant Center of Rotation Method
+            
+        Args:
+            Vx ::float                          - applied horizontal force
+            Vy ::float                          - applied vertical force 
+            torsion ::float                     - applied in-plane torsion
+            (OPTIONAL) bolt_capacity ::float    - bolt capacity in kips. Default = 17.9 kips for A325-N 3/4"
+                
+        Return:
+            return_dict ::dict                  - a dictionary containing calculation results
         """
         # store user input
-        self.update_geometric_properties()
         self.Vx = Vx
         self.Vy = Vy
         self.torsion = torsion
-        self.Vcapacity = bolt_capacity  # default = 17.9 kips for 3/4" A325N bolt in single shear
-        self.verbose = verbose
+        self.bolt_capacity = bolt_capacity
         
         # calculate resultant and load vector orientation
-        self.V_resultant = (self.Vx**2 + self.Vy**2)**(1/2)
-        self.theta = math.atan2(self.Vy, self.Vx) * 180 / math.pi
-        self.ecc = 0 if self.V_resultant==0 else self.torsion / self.V_resultant
+        self.V_resultant = (Vx**2 + Vy**2)**(1/2)
+        if self.V_resultant == 0 and self.torsion == 0:
+            raise RuntimeError("ERROR: No force applied!")
+        self.theta = math.atan2(Vy, Vx) * 180 / math.pi
         
-        # print information about the bolt group
-        if self.verbose:
-            print("Bolt Group Definition")
-            print("\t N_bolts = {} bolts".format(self.N_bolt))
-            print("\t Centroid: ({:.2f} in, {:.2f} in)".format(self.x_cg, self.y_cg))
-            print("\t Ix = {:.2f} in4".format(self.Ix))
-            print("\t Iy = {:.2f} in4".format(self.Iy))
-            print("\t J = {:.2f} in4".format(self.Iz))
-            print("\nApplied Loading Definition")
-            print("\t Vx = {:.1f} kips".format(self.Vx))
-            print("\t Vy = {:.1f} kips".format(self.Vy))
-            print("\t Mz = {:.1f} k.in".format(self.torsion))
-            print("\t eccentricity = {:.1f} in".format(abs(self.ecc)))
-            print("\t load angle = {:.1f} deg".format(self.theta))
-            
-        # solve with al three methods
-        self.df_result_elastic1 = self.solve_elastic()
-        self.df_result_elastic2 = self.solve_elastic_ICR()
-        self.df_result_ICR = self.solve_ICR()
+        # ezbolt simplifies user input into three load vectors at the centroid of bolt group, namely Vx, Vy, Mz
+        # the (x,y) coordinate of applied load (let's call this point P) can reside anywhere along the line 
+        # defined by (Vx*ey + Vy*ex = Mz). Therefore, another constraint is added where we let line P-ICR be
+        # perpendicular to the applied load vector (i.e. theta + 90).
+        # Note that figures within ICR tables in AISC steel manual is misleading. It seems to imply no vertical 
+        # eccentricity (e_y = 0). Yet such an assumption will lead to slightly different ICR coefficients than what's tabulated
+        self.ecc = 0 if self.V_resultant==0 else -self.torsion / self.V_resultant
+        self.ecc_y = self.ecc * math.sin(math.radians(self.theta+90))
+        self.ecc_x = self.ecc * math.cos(math.radians(self.theta+90))
+        
+        # solve with all three methods
+        result_elastic = self.solve_elastic()
+        result_ECR = self.solve_ECR()
+        result_ICR = self.solve_ICR()
         
         # return a dictionary containing all result dataframes
-        all_results = dict()
-        all_results["elastic"] = self.df_result_elastic1
-        all_results["elastic ICR"] = self.df_result_elastic2
-        all_results["ICR"] = self.df_result_ICR
-        return all_results
-        
+        self.results = dict()
+        self.results["Elastic Method - Superposition"] = result_elastic
+        self.results["Elastic Method - Center of Rotation"] = result_ECR
+        self.results["Instant Center of Rotation Method"] = result_ICR
+        return self.results
+
     def solve_elastic(self):
         """
-        Solve for bolt forces using elastic method (superposition of forces)
+        Solve for bolt forces using elastic method and superposition of forces.
         """
-        # calculate bolt forces
+        # calculate bolt forces per elastic method
         for bolt in self.bolts:
-            bolt.update_forces_elastic(Vx=self.Vx, Vy=self.Vy, N_bolt=self.N_bolt, torsion=self.torsion, Iz=self.Iz)
+            bolt.update_forces_elastic(Vx = self.Vx, 
+                                       Vy = self.Vy, 
+                                       N_bolt = self.N_bolt, 
+                                       torsion = self.torsion, 
+                                       Iz = self.Iz)
         
-        # write out results to console
-        self.Vdemand = max([b.v_resultant for b in self.bolts])
-        if self.verbose:
-            print("\nMethod 1 - Elastic method via superposition:")
-            print("\t Vmax = {:.2f} kips".format(self.Vdemand))
-            print("\t Capacity (one bolt) = {:.2f} kips".format(self.Vcapacity))
-            print("\t Demand (one bolt) = {:.2f} kips".format(self.Vdemand))
-            print("\t DCR = {:.2f}".format(self.Vdemand/self.Vcapacity))
+        # calculate maximum bolt force
+        self.bolt_demand = max([b.v_resultant for b in self.bolts])
         
-        # summarize results in a dataframe
+        # tabulate bolt forces
         result_dict=dict()
         result_dict["bolt_tag"] = [x.tag for x in self.bolts]
         result_dict["x"] = [b.x for b in self.bolts]
         result_dict["y"] = [b.y for b in self.bolts]
         result_dict["dx"] = [x.dx for x in self.bolts]
         result_dict["dy"] = [x.dy for x in self.bolts]
-        result_dict["ro"] = [x.ro for x in self.bolts]
+        result_dict["d"] = [x.ro for x in self.bolts]
         result_dict["vx_direct"] = [x.vx_direct for x in self.bolts]
         result_dict["vx_torsion"] = [x.vx_torsion for x in self.bolts]
         result_dict["vy_direct"] = [x.vy_direct for x in self.bolts]
@@ -216,267 +271,286 @@ class BoltGroup:
         result_dict["vx_total"] = [x.vx_total for x in self.bolts]
         result_dict["vy_total"] = [x.vy_total for x in self.bolts]
         result_dict["v_resultant"] = [x.v_resultant for x in self.bolts]
-        result_dict["moment"] = [x.moment_z for x in self.bolts]
-        result_dict["theta"] = [x.v_theta for x in self.bolts]
-        df = pd.DataFrame.from_dict(result_dict)
-        
-        # add a summation row
-        empty_row = list(np.full(df.shape[1], None))
-        empty_row[0] = "Sum"
-        empty_row[10] = sum(result_dict["vx_total"])
-        empty_row[11] = sum(result_dict["vy_total"])
-        empty_row[13] = sum(result_dict["moment"])
-        headers = df.columns
-        sum_row = pd.DataFrame(empty_row, index=headers).T
-        df = pd.concat([df, sum_row.iloc[[0]]], ignore_index=True)
+        result_dict["moment"] = [x.moment for x in self.bolts]
+        result_dict["theta"] = [x.theta for x in self.bolts]
+        df = pd.DataFrame(result_dict)
+        sum_row = pd.DataFrame([""] * df.shape[1]).T
+        sum_row.columns = df.columns
+        sum_row["bolt_tag"] = "Total"
+        sum_row["vx_total"] = sum([x.vx_total for x in self.bolts])
+        sum_row["vy_total"] = sum([x.vy_total for x in self.bolts])
+        sum_row["moment"] = sum([x.moment for x in self.bolts])
+        df = pd.concat([df, sum_row], ignore_index=True)
         df = df.set_index("bolt_tag")
-        return df
+        
+        # save results to return dictionary
+        return_dict = dict()
+        return_dict["Bolt Force Table"] = df
+        return_dict["Bolt Demand"] = self.bolt_demand
+        return_dict["Bolt Capacity"] = self.bolt_capacity
+        return_dict["DCR"] = self.bolt_demand/self.bolt_capacity
+        return return_dict
     
-    def solve_elastic_ICR(self):
+    def solve_ECR(self):
         """
-        Solve for bolt forces using elastic method (equivalent center of rotation). See Brandt paper.
+        Solve for bolt forces using elastic center of rotation (ECR) method.
         """
         if self.torsion == 0:
-            if self.verbose:
-                print("\nMethod 2 - Elastic method via equivalent center of rotation:")
-                print("\t Applied torsion = 0")
-                print("\t This method is not applicable as center of rotation does not exist when torsion = 0")
-                return "not applicable"
+            return "Method not applicable when torsion = 0"
         else:
-            # determine location of elastic ICR
-            self.elastic_ax = -self.Vy * self.Iz / self.torsion / self.N_bolt
-            self.elastic_ay = self.Vx * self.Iz / self.torsion / self.N_bolt
-            self.elastic_ICRx = self.x_cg + self.elastic_ax
-            self.elastic_ICRy = self.y_cg + self.elastic_ay
+            # calculate location of ECR which is deterministic
+            self.ECR_ax = self.Vy * self.Iz / self.torsion / self.N_bolt
+            self.ECR_ay = self.Vx * self.Iz / self.torsion / self.N_bolt
+            self.ECR_x = self.x_cg - self.ECR_ax
+            self.ECR_y = self.y_cg + self.ECR_ay
             
-            # calculate bolt distance to elastic ICR
+            # calculate new eccentricity with respect to ECR
+            self.ecc_ECRx = self.ecc_x + self.ECR_ax
+            self.ecc_ECRy = self.ecc_y - self.ECR_ay
+            self.ecc_ECR = math.sqrt(self.ecc_ECRx**2 + self.ecc_ECRy**2)
+            
+            # calculate bolt distance to ECR
             for bolt in self.bolts:
-                bolt.update_geometry_elastic_ICR(self.elastic_ICRx, self.elastic_ICRy)
+                bolt.update_geometry_ECR(self.ECR_x, self.ECR_y)
             
-            # calculate elastic bolt force coefficient
-            sumdsquared = sum([b.ro_elastic**2 for b in self.bolts])
-            dmax = max([b.ro_elastic for b in self.bolts])
-            ecc_ECRx = -self.ecc * math.cos(math.radians(self.theta+90)) - self.elastic_ax
-            ecc_ECRy = -self.ecc * math.sin(math.radians(self.theta+90)) - self.elastic_ay
-            ecc_ECR = math.sqrt(ecc_ECRx**2 + ecc_ECRy**2)
-
-            # special case of pure torsion
-            if self.ecc==0:
-                Mp = 1
-                Ce = self.Vcapacity*(sumdsquared / dmax / Mp)/self.torsion
-                Pmax = Ce * self.torsion
-                
-                # calculate bolt forces
-                for bolt in self.bolts:
-                    bolt.update_forces_elastic_ICR(sumdsquared, Mp, self.torsion)
-                
-                # print result to console
-                if self.verbose:
-                    print("\nMethod 2 - Elastic method via center of rotation:")
-                    print("\t SPECIAL CASE: Pure Torsion")
-                    print("\t Elastic center of rotation found at ({:.2f} in, {:.2f} in)".format(self.elastic_ICRx, self.elastic_ICRy))
-                    print("\t Ce is equal to {:.2f}; Rult is equal to {:.2f} k.in".format(Ce, self.Vcapacity))
-                    print("\t Capacity (overall connection) = Ce*Rult = {:.2f} k.in".format(Pmax))
-                    print("\t Demand (overall connection) = {:.2f} k.in".format(self.torsion))
-                    print("\t DCR = {:.2f}".format(self.torsion/Pmax))
-                    
-            # typical case with torsion + applied force
+            # calculate elastic center of rotation coefficient
+            dmax = max([b.ro_ECR for b in self.bolts])
+            sumdsquared = sum([b.ro_ECR**2 for b in self.bolts])
+            if self.V_resultant == 0:
+                self.Ce = sumdsquared / (dmax)
             else:
-                Mp = 1 * ecc_ECR
-                Ce = 1 / (Mp * dmax / sumdsquared)
-                Pmax = Ce * self.Vcapacity
+                self.Ce = sumdsquared / (self.ecc_ECR * dmax)
+
+            # calculate bolt force 
+            if self.V_resultant == 0:
+                K = 1 / sumdsquared * self.torsion
+            else:
+                if self.torsion < 0:
+                    K = - self.ecc_ECR / sumdsquared * self.V_resultant
+                elif self.torsion > 0:
+                    K = self.ecc_ECR / sumdsquared * self.V_resultant
+                
+            for bolt in self.bolts:
+                bolt.update_forces_ECR(K)
+                
+            # calculate final connection capacity and demand
+            self.P_capacity = self.Ce * self.bolt_capacity
+            self.P_demand = self.V_resultant if self.ecc!= 0 else self.torsion
             
-                # calculate bolt forces
-                for bolt in self.bolts:
-                    bolt.update_forces_elastic_ICR(sumdsquared, Mp, self.V_resultant)
-                
-                # print result to console
-                if self.verbose:
-                    print("\nMethod 2 - Elastic method with center of rotation:")
-                    print("\t Elastic center of rotation found at ({:.2f} in, {:.2f} in)".format(self.elastic_ICRx, self.elastic_ICRy))
-                    print("\t Ce = {:.2f}".format(Ce))
-                    print("\t Rult = {:.2f} kips".format(self.Vcapacity))
-                    print("\t Capacity (overall connection) = Ce*Rult = {:.2f} kips".format(Pmax))
-                    print("\t Demand (overall connection) = {:.2f} kips".format(self.V_resultant))
-                    print("\t DCR = {:.2f}".format(self.V_resultant/Pmax))
-                
-            # save results to dataframe
+            # tabulate bolt forces
             result_dict=dict()
             result_dict["bolt_tag"] = [x.tag for x in self.bolts]
             result_dict["x"] = [b.x for b in self.bolts]
             result_dict["y"] = [b.y for b in self.bolts]
-            result_dict["dx_ECR"] = [x.dx_elastic for x in self.bolts]
-            result_dict["dy_ECR"] = [x.dy_elastic for x in self.bolts]
-            result_dict["ro_ECR"] = [x.ro_elastic for x in self.bolts]
+            result_dict["dx_ECR"] = [x.dx_ECR for x in self.bolts]
+            result_dict["dy_ECR"] = [x.dy_ECR for x in self.bolts]
+            result_dict["d_ECR"] = [x.ro_ECR for x in self.bolts]
             result_dict["vx"] = [x.vx_ECR for x in self.bolts]
             result_dict["vy"] = [x.vy_ECR for x in self.bolts]
-            result_dict["v_resultant"] = [x.v_ECR for x in self.bolts]
-            result_dict["moment_CG"] = [x.moment_CG_elastic for x in self.bolts]
+            result_dict["v_resultant"] = [x.vtotal_ECR for x in self.bolts]
+            result_dict["moment_CG"] = [x.moment_ECG for x in self.bolts]
             result_dict["moment_ECR"] = [x.moment_ECR for x in self.bolts]
             df = pd.DataFrame.from_dict(result_dict)
-            
-            # add a summation row
-            empty_row = list(np.full(df.shape[1], None))
-            empty_row[0] = "Sum"
-            empty_row[6] = sum(result_dict["vx"])
-            empty_row[7] = sum(result_dict["vy"])
-            empty_row[9] = sum(result_dict["moment_CG"])
-            empty_row[10] = sum(result_dict["moment_ECR"])
-            headers = df.columns
-            sum_row = pd.DataFrame(empty_row, index=headers).T
-            df = pd.concat([df, sum_row.iloc[[0]]], ignore_index=True)
+            sum_row = pd.DataFrame([""] * df.shape[1]).T
+            sum_row.columns = df.columns
+            sum_row["bolt_tag"] = "Total"
+            sum_row["vx"] = sum([x.vx_ECR for x in self.bolts])
+            sum_row["vy"] = sum([x.vy_ECR for x in self.bolts])
+            sum_row["moment_CG"] = sum([x.moment_ECG for x in self.bolts])
+            sum_row["moment_ECR"] = sum([x.moment_ECR for x in self.bolts])
+            df = pd.concat([df, sum_row], ignore_index=True)
             df = df.set_index("bolt_tag")
-            return df
+            
+            # save results to return dictionary
+            return_dict= dict()
+            return_dict["Bolt Force Table"] = df
+            return_dict["Center of Rotation"] = [self.ECR_x, self.ECR_y]
+            return_dict["Ce"] = self.Ce
+            return_dict["Bolt Capacity"] = self.bolt_capacity
+            return_dict["Connection Capacity"] = self.P_capacity
+            return_dict["Connection Demand"] = self.P_demand
+            return_dict["DCR"] = self.P_demand / self.P_capacity
+        return return_dict
     
     def solve_ICR(self):
         """
-        Solve for bolt forces using ICR method. See Brandt's Method paper
+        Solve for bolt forces using ICR method.
         """
-        # Possibility 1: No torsion. ICR method is not applicable
+        # possibility #1: No torsion. ICR method is not applicable
         if self.torsion == 0:
-            if self.verbose:
-                print("\nMethod 3 - ICR method:")
-                print("\t Applied torsion = 0")
-                print("\t This method is not applicable as center of rotation does not exist when torsion = 0")
-                return "not applicable"
+            return "ICR Method not applicable when torsion = 0"
         
-        # Possibility 2: Pure torsion. ICR is located at bolt group CoG
-        else:
-            if self.ecc==0:
-                if self.verbose:
-                    print("\nMethod 3 - ICR method:")
-                    print("\t SPECIAL CASE: Pure Torsion")
-                    print("\t ICR located at bolt group CG: ({:.2f}, {:.2f})".format(self.x_cg, self.y_cg))
-                self.ICR_x.append(self.x_cg)
-                self.ICR_y.append(self.y_cg)
-                result_dict = dict()
-                return result_dict
-                
-        # Possibility 3: Typical applied force + torsion
-            else:
-                if self.verbose:
-                    print("\nMethod 3 - ICR method:")
-                    print("\t Searching location of ICR with Brandt's Method':")
-                
-                # convert to unit force
-                Px_unit = math.cos(math.radians(self.theta))
-                Py_unit = math.sin(math.radians(self.theta))
-                print(Px_unit,Py_unit)
-                
-                # start iteration to search for ICR
-                residual = 999
-                tol = 0.00001
-                N_iter = 0
-                max_iter = 50
-                fxx = []
-                fyy = []
-                residual = []
-                ecc_ICRx = []
-                ecc_ICRy = []
-                while True:
-                    # increment to next ICR location
-                    if N_iter == 0:
-                        ax = -Py_unit * self.Iz / self.ecc / self.N_bolt
-                        ay = Px_unit * self.Iz / self.ecc / self.N_bolt
-                        ICR_x = self.x_cg + ax
-                        ICR_y = self.y_cg + ay
-                    else:
-                        ax = -fyy[-1] * self.Iz / self.ecc / self.N_bolt
-                        ay = fxx[-1] * self.Iz / self.ecc / self.N_bolt
-                        ICR_x = self.ICR_x[-1] + ax
-                        ICR_y = self.ICR_y[-1] + ay
-                    
-                    # calculate Mp, ecc with respect to new ICR
-                    if N_iter == 0:
-                        ecc_ICRx = self.ecc * -math.cos(math.radians(self.theta+90)) - ax
-                        ecc_ICRy = self.ecc * -math.sin(math.radians(self.theta+90)) - ay
-                    else:
-                        ecc_ICRx += ax
-                        ecc_ICRy += ay
-                    ecc_ICR = math.sqrt(ecc_ICRx**2 + ecc_ICRy**2)
-                    Mp = 1 * ecc_ICR
-                    
-                    # update bolt geometry with respect to assumed ICR
-                    for bolt in self.bolts:
-                        bolt.update_geometry_ICR(ICR_x, ICR_y)
-                    
-                    # calculate sumMi based on new ICR
-                    ro_max = max([b.ro_ICR[-1] for b in self.bolts])
-                    Mi = []
-                    for bolt in self.bolts:
-                        Mi.append(bolt.update_forces_ICR(ro_max, 1.0, get_moment_only=True))
-                    
-                    # calculate ICR coefficient and Rult
-                    Cu = sum(Mi) / Mp
-                    
-                    # check equilibrium
-                    Rult_unit = 1 / Cu
-                    for bolt in self.bolts:
-                        bolt.update_forces_ICR(ro_max, Rult_unit, get_moment_only=False)
-                    
-                    sumFx = sum([b.vx_ICR[-1] for b in self.bolts])
-                    sumFy = sum([b.vy_ICR[-1] for b in self.bolts])
-                    fxx.append(sumFx + Px_unit)
-                    fyy.append(sumFy + Py_unit)
-                    residual.append(math.sqrt(fxx[-1]**2 + fyy[-1]**2))
-                    
-                    if self.verbose:
-                        print("\t\t Trial {}: ({:.2f}, {:.2f}). fxx = {:.2f}, fyy = {:.2f}".format(N_iter+1, ICR_x, ICR_y, fxx[-1], fyy[-1]))
-                    
-                    # save results
-                    self.ICR_coeff.append(Cu)
-                    self.ICR_ax.append(ax)
-                    self.ICR_ay.append(ay)
-                    self.ICR_x.append(ICR_x)
-                    self.ICR_y.append(ICR_y)
-                    self.Mp.append(Mp)
-                    
-                    # create tabular summary
-                    result_dict=dict()
-                    result_dict["bolt_tag"] = [x.tag for x in self.bolts]
-                    result_dict["x"] = [b.x for b in self.bolts]
-                    result_dict["y"] = [b.y for b in self.bolts]
-                    result_dict["dx_ICR"] = [x.dx_ICR[-1] for x in self.bolts]
-                    result_dict["dy_ICR"] = [x.dy_ICR[-1] for x in self.bolts]
-                    result_dict["ro_ICR"] = [x.ro_ICR[-1] for x in self.bolts]
-                    result_dict["deformation"] = [x.deformation_ICR[-1] for x in self.bolts]
-                    result_dict["force"] = [x.force_ICR[-1] for x in self.bolts]
-                    result_dict["moment_ICR"] = [x.moment_ICR[-1] for x in self.bolts]
-                    result_dict["moment_CG"] = [x.moment_CG[-1] for x in self.bolts]
-                    result_dict["Vx"] = [x.vx_ICR[-1] for x in self.bolts]
-                    result_dict["Vy"] = [x.vy_ICR[-1] for x in self.bolts]
-                    df = pd.DataFrame.from_dict(result_dict)
-                    
-                    # add a summation row
-                    empty_row = list(np.full(df.shape[1], None))
-                    empty_row[0] = "Sum"
-                    empty_row[10] = sum(result_dict["Vx"])
-                    empty_row[11] = sum(result_dict["Vy"])
-                    empty_row[8] = sum(result_dict["moment_ICR"])
-                    empty_row[9] = sum(result_dict["moment_CG"])
-                    headers = df.columns
-                    sum_row = pd.DataFrame(empty_row, index=headers).T
-                    df = pd.concat([df, sum_row.iloc[[0]]], ignore_index=True)
-                    df = df.set_index("bolt_tag")
-                    self.ICR_table.append(df)
-                    
-                    # end loop if equilibrium is obtained
-                    if residual[-1] < tol:
-                        if self.verbose:
-                            print("\t Success. ICR found at ({:.2f}, {:.2f})".format(self.ICR_x[-1], self.ICR_y[-1]))
-                        found_ICR = True
-                        break
-                    
-                    # end loop if maximum number of iterations exceeded
-                    N_iter +=1
-                    if N_iter > max_iter:
-                        print("\t WARNING: could not converge on ICR after 100 iterations. Ending solver.")
-                        found_ICR = False
-                        break
-            
-                # once ICR has been found, update forces and summarize
-                if found_ICR:
-                    return result_dict
+        # possibility #2: Typical applied load. Iteration needed to find ICR
+        elif self.V_resultant !=0:
+            print("Searching for location of ICR using Brandt's method...")
+            tol = 0.01
+            N_iter = 0
+            max_iter = 200
+            fxx = []
+            fyy = []
+            residual = []
+            while True:
+                if N_iter == 0:
+                    ax = self.Vy * self.Iz / self.torsion / self.N_bolt
+                    ay = self.Vx * self.Iz / self.torsion / self.N_bolt
+                    ICR_x = self.x_cg - ax
+                    ICR_y = self.y_cg + ay
+                    ICR_ex = self.ecc_x + ax
+                    ICR_ey = self.ecc_y - ay
                 else:
-                    return "ICR not found. Could not obtain solution"
-        
+                    # I reduced ax, ay by a factor of 5 to ensure convergence with smaller step
+                    # some configurations of load and bolts leads to infinite cycles and no convergence
+                    ax = fyy[-1] * self.Iz / self.torsion / self.N_bolt/5
+                    ay = fxx[-1] * self.Iz / self.torsion / self.N_bolt/5
+                    ICR_x = self.ICR_x[-1] - ax
+                    ICR_y = self.ICR_y[-1] + ay
+                    ICR_ex = self.ecc_ICRx[-1] + ax
+                    ICR_ey = self.ecc_ICRy[-1] - ay
+                
+                self.ICR_x.append(ICR_x)
+                self.ICR_y.append(ICR_y)
+                self.ICR_ax.append(ax)
+                self.ICR_ay.append(ay)
+                self.ecc_ICRx.append(ICR_ex)
+                self.ecc_ICRy.append(ICR_ey)
+                self.ecc_ICR.append(math.sqrt(self.ecc_ICRx[-1]**2 + self.ecc_ICRy[-1]**2))
+                
+                # update bolt geometry with respect to assumed ICR
+                for bolt in self.bolts:
+                    bolt.update_geometry_ICR(self.ICR_x[-1], self.ICR_y[-1])
+                
+                # compute ICR coefficient at assumed ICR
+                ro_max = max([b.ro_ICR[-1] for b in self.bolts])
+                Mi1 = [b.get_moment_ICR(ro_max) for b in self.bolts]
+                Mp1 = math.sqrt(self.ecc_ICRx[-1]**2 + self.ecc_ICRy[-1]**2)
+                ICR_Cu = abs(sum(Mi1) / Mp1)
+                self.Cu.append(ICR_Cu)
+                
+                # compute Fmax at specified force magnitude
+                Mp = self.Vx * self.ecc_ICRy[-1] - self.Vy * self.ecc_ICRx[-1]
+                F_max = Mp / sum(Mi1)
+                
+                # compute bolt forces
+                for bolt in self.bolts:
+                    bolt.update_forces_ICR(ro_max, F_max)
+                    
+                # check equilibrium
+                sumFx = sum([b.vx_ICR[-1] for b in self.bolts])
+                sumFy = sum([b.vy_ICR[-1] for b in self.bolts])
+                fxx.append(sumFx + self.Vx)
+                fyy.append(sumFy + self.Vy)
+                residual.append(math.sqrt(fxx[-1]**2 + fyy[-1]**2))
+                print("\t Trial {}: ({:.2f}, {:.2f}). fxx = {:.2f}, fyy = {:.2f}".format(N_iter+1, self.ICR_x[-1], self.ICR_y[-1], fxx[-1], fyy[-1]))
+
+                # tabulate bolt forces at each step
+                result_dict=dict()
+                result_dict["bolt_tag"] = [x.tag for x in self.bolts]
+                result_dict["x"] = [b.x for b in self.bolts]
+                result_dict["y"] = [b.y for b in self.bolts]
+                result_dict["dx_ICR"] = [x.dx_ICR[-1] for x in self.bolts]
+                result_dict["dy_ICR"] = [x.dy_ICR[-1] for x in self.bolts]
+                result_dict["ro_ICR"] = [x.ro_ICR[-1] for x in self.bolts]
+                result_dict["deformation"] = [x.deformation_ICR[-1] for x in self.bolts]
+                result_dict["force"] = [x.force_ICR[-1] for x in self.bolts]
+                result_dict["moment_ICR"] = [x.moment_ICR[-1] for x in self.bolts]
+                result_dict["moment_CG"] = [x.moment_ICG[-1] for x in self.bolts]
+                result_dict["Vx"] = [x.vx_ICR[-1] for x in self.bolts]
+                result_dict["Vy"] = [x.vy_ICR[-1] for x in self.bolts]
+                df = pd.DataFrame.from_dict(result_dict)
+                sum_row = pd.DataFrame([""] * df.shape[1]).T
+                sum_row.columns = df.columns
+                sum_row["bolt_tag"] = "Total"
+                sum_row["Vx"] = sum([x.vx_ICR[-1] for x in self.bolts])
+                sum_row["Vy"] = sum([x.vy_ICR[-1] for x in self.bolts])
+                sum_row["moment_CG"] = sum([x.moment_ICG[-1] for x in self.bolts])
+                sum_row["moment_ICR"] = sum([x.moment_ICR[-1] for x in self.bolts])
+                df = pd.concat([df, sum_row], ignore_index=True)
+                df = df.set_index("bolt_tag")
+                self.ICR_table.append(df)
+
+                # end loop if equilibrium is obtained
+                if residual[-1] < tol:
+                    print("\t Success! ICR found at ({:.2f}, {:.2f})".format(self.ICR_x[-1], self.ICR_y[-1]))
+                    self.P_demand_ICR = self.V_resultant
+                    self.P_capacity_ICR = self.Cu[-1] * self.bolt_capacity
+                    
+                    return_dict = dict()
+                    return_dict["Bolt Force Tables"] = self.ICR_table
+                    return_dict["ICR"] = list(zip(self.ICR_x, self.ICR_y))
+                    return_dict["Cu"] = self.Cu
+                    return_dict["Connection Demand"] = self.P_demand_ICR
+                    return_dict["Connection Capacity"] = self.P_capacity_ICR
+                    return_dict["DCR"] = self.P_demand_ICR/self.P_capacity_ICR
+                    return return_dict
+                
+                # end loop if maximum number of iterations exceeded
+                N_iter +=1
+                if N_iter > max_iter:
+                    raise RuntimeError("could not converge on ICR after 200 iterations. Ending solver.")
+         
+                
+         
+        # possibility #3: Pure torsion. ICR is located at centroid
+        elif self.V_resultant == 0:
+            self.ICR_x = [self.x_cg]
+            self.ICR_y = [self.y_cg]
+            print("Special Case: Pure Torsion. ICR at ({:.2f}, {:.2f})".format(self.x_cg, self.y_cg))
+            
+            # update bolt geometry with respect to assumed ICR
+            for bolt in self.bolts:
+                bolt.update_geometry_ICR(self.ICR_x[-1], self.ICR_y[-1])
+            
+            # compute ICR coefficient at assumed ICR
+            ro_max = max([b.ro_ICR[-1] for b in self.bolts])
+            Mi1 = [b.get_moment_ICR(ro_max) for b in self.bolts]
+            Mp1 = 1
+            ICR_Cu = [abs(sum(Mi1) / Mp1)]
+            self.Cu = ICR_Cu
+            
+            # compute Fmax at specified force magnitude
+            Mp = -self.torsion
+            F_max = Mp / sum(Mi1)
+            
+            # compute bolt forces
+            for bolt in self.bolts:
+                bolt.update_forces_ICR(ro_max, F_max)
+                
+            # tabulate bolt forces
+            result_dict=dict()
+            result_dict["bolt_tag"] = [x.tag for x in self.bolts]
+            result_dict["x"] = [b.x for b in self.bolts]
+            result_dict["y"] = [b.y for b in self.bolts]
+            result_dict["dx_ICR"] = [x.dx_ICR[-1] for x in self.bolts]
+            result_dict["dy_ICR"] = [x.dy_ICR[-1] for x in self.bolts]
+            result_dict["ro_ICR"] = [x.ro_ICR[-1] for x in self.bolts]
+            result_dict["deformation"] = [x.deformation_ICR[-1] for x in self.bolts]
+            result_dict["force"] = [x.force_ICR[-1] for x in self.bolts]
+            result_dict["moment_ICR"] = [x.moment_ICR[-1] for x in self.bolts]
+            result_dict["moment_CG"] = [x.moment_ICG[-1] for x in self.bolts]
+            result_dict["Vx"] = [x.vx_ICR[-1] for x in self.bolts]
+            result_dict["Vy"] = [x.vy_ICR[-1] for x in self.bolts]
+            df = pd.DataFrame.from_dict(result_dict)
+            sum_row = pd.DataFrame([""] * df.shape[1]).T
+            sum_row.columns = df.columns
+            sum_row["bolt_tag"] = "Total"
+            sum_row["Vx"] = sum([x.vx_ICR[-1] for x in self.bolts])
+            sum_row["Vy"] = sum([x.vy_ICR[-1] for x in self.bolts])
+            sum_row["moment_CG"] = sum([x.moment_ICG[-1] for x in self.bolts])
+            sum_row["moment_ICR"] = sum([x.moment_ICR[-1] for x in self.bolts])
+            df = pd.concat([df, sum_row], ignore_index=True)
+            df = df.set_index("bolt_tag")
+            self.ICR_table.append(df)
+            
+            # gather return dict
+            self.P_demand_ICR = self.torsion
+            self.P_capacity_ICR = self.Cu[-1] * self.bolt_capacity
+            
+            return_dict = dict()
+            return_dict["Bolt Force Tables"] = self.ICR_table
+            return_dict["ICR"] = list(zip(self.ICR_x, self.ICR_y))
+            return_dict["Cu"] = self.Cu
+            return_dict["Connection Demand"] = self.P_demand_ICR
+            return_dict["Connection Capacity"] = self.P_capacity_ICR
+            return_dict["DCR"] = self.P_demand_ICR/self.P_capacity_ICR
+            return return_dict
+            

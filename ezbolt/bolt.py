@@ -1,43 +1,63 @@
 import math
 
 
-
 class Bolt:
     """
-    Bolt object definition
+    Bolt object is used to represent individual bolts within a bolt group.
+    They are created through the .add_bolts() method in the BoltGroup class.
     
     Input Arguments:
-        tag              an unique ID for each bolt
-        x                absolute x coordinate
-        y                absolute y coordinate
+        tag ::str                       - unique ID for each bolt
+        x ::float                       - x coordinate
+        y ::float                       - y coordinate
         
     Attributes:
-        dx               x distance from CG to bolt (x - x_cg)
-        dy               y distance from CG to bolt (y - y_cg)
-        ro               Euclidean distance from CG to bolt
+        dx ::float                      - x distance from CG to bolt (x - x_cg)
+        dy ::float                      - y distance from CG to bolt (y - y_cg)
+        ro ::float                      - Euclidean distance from CG to bolt
         
-        vx_direct        shear demand in x direction due to direct shear
-        vy_direct        shear demand in y direction due to direct shear
-        vx_torsion       shear demand in x direction due to torsion
-        vy_torsion       shear demand in y direction due to torsion
-        vx_total         shear demand in x direction total
-        vy_total         shear demand in y direction total
-        v_resultant      shear demand total vector sum
-        v_theta          shear vector angle with respect to horizontal
+        vx_direct ::float               - shear demand in x direction due to direct shear
+        vy_direct ::float               - shear demand in y direction due to direct shear
+        vx_torsion ::float              - shear demand in x direction due to torsion
+        vy_torsion ::float              - shear demand in y direction due to torsion
+        vx_total ::float                - shear demand in x direction total
+        vy_total ::float                - shear demand in y direction total
+        v_resultant ::float             - shear demand total vector sum
+        theta ::float                   - force vector angle with respect to horizontal in degrees
+        moment ::float                  - resisting moment contribution = v_resultant * ro
         
-        dx_ICR           x distance from ICR to bolt (x - x_ICR)
-        dy_ICR           y distance from ICR to bolt (y - y_ICR)
-        ro_ICR           Euclidean distance from ICR to bolt
-        theta_ICR        angle of line from bolt to ICR with respect to horizontal
-        vx_ICR_unit
-        vy_ICR_unit
-        v_theta_ICR
-        m_ICR_unit       bolt moment contribution
+        dx_ECR ::float                  - x distance from ECR to bolt (x - x_ECR)
+        dy_ECR ::float                  - y distance from ECR to bolt (y - y_ECR)
+        ro_ECR ::float                  - Euclidean distance from ECR to bolt
+        vx_ECR ::float                  - shear demand in x direction from ECR method
+        vy_ECR ::float                  - shear demand in y direction from ECR method
+        theta_ECR ::float               - force vector angle with respect to horizontal in degrees from ECR method
+        vtotal_ECR ::float              - shear demand total vector sum from ECR method
+        moment_ECR ::float              - resisting moment contribution with respect to CoG = v_resultant * ro
+        moment_ECG ::float              - resisting moment contribution with respect to ECR
+        
+        dx_ICR ::list(float)            - x distance from ICR to bolt (x - x_ICR)
+        dy_ICR ::list(float)            - y distance from ICR to bolt (y - y_ICR)
+        ro_ICR ::list(float)            - Euclidean distance from ICR to bolt
+        force_ICR ::list(float)         - total shear based on ICR force-deformation relationship
+        deformation_ICR ::list(float)   - bolt deformation varying linearly from ICR
+        moment_ICR ::list(float)        - resisting moment contribution with respect to ICR
+        moment_ICG ::list(float)        - resisting moment contribution with respect to CoG = v_resultant * ro
+        vx_ICR ::list(float)            - shear demand in x direction from ICR method
+        vy_ICR ::list(float)            - shear demand in y direction from ICR method
+        theta_ICR ::list(float)         - force vector angle with respect to horizontal in degrees from ICR method
         
     Public Methods:
-        None
+        .update_geometry()
+        .update_geometry_ECR()
+        .update_geometry_ICR()
+        .update_forces_elastic()
+        .update_forces_ECR()
+        .update_forces_ICR()
+        .get_moment_ICR()
     """
     def __init__(self, tag, x, y):
+        # general attributes
         self.tag = tag
         self.x = x
         self.y = y
@@ -45,7 +65,7 @@ class Bolt:
         self.dy = None
         self.ro = None
         
-        # elastic method
+        # attributes for elastic method
         self.vx_direct = None
         self.vy_direct = None
         self.vx_torsion = None
@@ -53,49 +73,51 @@ class Bolt:
         self.vx_total = None
         self.vy_total = None
         self.v_resultant = None
-        self.v_theta = None
-        self.moment_z = None
+        self.theta = None
+        self.moment = None
         
-        # elastic ICR method
-        self.dx_elastic = None
-        self.dy_elastic = None
-        self.ro_elastic = None
+        # attributes for ECR method
+        self.dx_ECR = None
+        self.dy_ECR = None
+        self.ro_ECR = None
         self.vx_ECR = None
         self.vy_ECR = None
-        self.v_ECR = None
+        self.theta_ECR = None
+        self.vtotal_ECR = None
         self.moment_ECR = None
-        self.moment_CG_elastic = None
+        self.moment_ECG = None
         
-        # instant center of rotation method
+        # attributes for ICR method
         self.dx_ICR = []
         self.dy_ICR = []
         self.ro_ICR = []
         self.force_ICR = []
         self.deformation_ICR = []
         self.moment_ICR = []
-        self.moment_CG = []
+        self.moment_ICG = []
         self.vx_ICR = []
         self.vy_ICR = []
+        self.theta_ICR = []
 
     def update_geometry(self, x_cg, y_cg):
         """
-        Update geometry with respect to bolt group CG
+        Update bolt geometry with respect to bolt group CG
         """
         self.dx = self.x - x_cg
         self.dy = self.y - y_cg
         self.ro = (self.dx**2 + self.dy**2)**(1/2)
         
-    def update_geometry_elastic_ICR(self, x_elastic_ICR, y_elastic_ICR):
+    def update_geometry_ECR(self, x_ECR, y_ECR):
         """
         Update geometry with respect to elastic center of rotation
         """
-        self.dx_elastic = self.x - x_elastic_ICR
-        self.dy_elastic = self.y - y_elastic_ICR
-        self.ro_elastic = (self.dx_elastic**2 + self.dy_elastic**2)**(1/2)
+        self.dx_ECR = self.x - x_ECR
+        self.dy_ECR = self.y - y_ECR
+        self.ro_ECR = (self.dx_ECR**2 + self.dy_ECR**2)**(1/2)
         
     def update_geometry_ICR(self, x_ICR, y_ICR):
         """
-        Update geometry with respect to elastic center of rotation
+        Update geometry with respect to instant center of rotation
         """
         self.dx_ICR.append( self.x - x_ICR )
         self.dy_ICR.append( self.y - y_ICR )
@@ -112,49 +134,51 @@ class Bolt:
         self.vx_total = self.vx_direct + self.vx_torsion
         self.vy_total = self.vy_direct + self.vy_torsion
         self.v_resultant = (self.vx_total**2 + self.vy_total**2)**(1/2)
-        self.v_theta = math.atan2(self.vy_total,self.vx_total) * 180 / math.pi
-        self.moment_z = - self.vx_total*self.dy + self.vy_total*self.dx
+        self.theta = math.atan2(self.vy_total,self.vx_total) * 180 / math.pi
+        self.moment = -(self.vx_total*self.dy) + self.vy_total*self.dx
         
-    def update_forces_elastic_ICR(self, sumdsquared, Mp, scale_factor):
+    def update_forces_ECR(self, K):
         """
-        Compute bolt forces using elastic method (equivalent elastic center of rotation)
+        Compute bolt forces using elastic center of rotation method
         """
-        self.vx_ECR = (Mp * self.dy_elastic / sumdsquared)
-        self.vy_ECR = - (Mp * self.dx_elastic / sumdsquared) 
-        self.v_ECR = math.sqrt(self.vx_ECR**2 + self.vy_ECR**2) * scale_factor
-        theta = math.atan2(self.vy_ECR, self.vx_ECR) * 180 / math.pi
-        self.vx_ECR = self.v_ECR * math.cos(math.radians(theta))
-        self.vy_ECR = self.v_ECR * math.sin(math.radians(theta))
-        self.moment_ECR = - self.vx_ECR*self.dy_elastic + self.vy_ECR*self.dx_elastic
-        self.moment_CG_elastic = - self.vx_ECR*self.dy + self.vy_ECR*self.dx
+        self.vx_ECR = K * self.dy_ECR
+        self.vy_ECR = -K * self.dx_ECR
+        self.theta_ECR = math.atan2(self.vy_ECR,self.vx_ECR) * 180 / math.pi
+        self.vtotal_ECR = math.sqrt(self.vx_ECR**2 + self.vy_ECR**2)
+        self.moment_ECR = self.vtotal_ECR * self.ro_ECR
+        self.moment_ECG = -self.vx_ECR*self.dy + self.vy_ECR*self.dx
     
-    def update_forces_ICR(self, ro_max, Rult, get_moment_only):
+    def update_forces_ICR(self, ro_max, Rult):
         """
         Compute bolt forces using ICR method
         """      
-        if get_moment_only:
-            D_ULT = 0.34  # in. maximum bolt deformation
-            deformation = self.ro_ICR[-1] / ro_max * D_ULT
-            force = (1-math.exp(-10*deformation))**(0.55)
-            moment = force * self.ro_ICR[-1]
-            return moment
-        else:
-            D_ULT = 0.34  # in. maximum bolt deformation
-            deformation = self.ro_ICR[-1] / ro_max * D_ULT
-            force = (1-math.exp(-10*deformation))**(0.55) * Rult
-            
-            # calculate force components in x and y and moment
-            theta = math.atan2(self.dy_ICR[-1], self.dx_ICR[-1]) * 180 / math.pi
-            vx = force * -math.cos(math.radians(theta+90))
-            vy = force * -math.sin(math.radians(theta+90))
-            moment_cg = -vx*self.dy + vy*self.dx
-            moment_icr = force*self.ro_ICR[-1]
-            
-            # save results
-            self.vx_ICR.append(vx)
-            self.vy_ICR.append(vy)
-            self.deformation_ICR.append(deformation)
-            self.force_ICR.append(force)
-            self.moment_ICR.append(moment_icr)
-            self.moment_CG.append(moment_cg)
+        D_ULT = 0.34
+        deformation = self.ro_ICR[-1] / ro_max * D_ULT
+        force = (1-math.exp(-10*deformation))**(0.55) * Rult
+        moment_icr = force*self.ro_ICR[-1]
         
+        # calculate force components in x and y and moment
+        vx = -force * self.dy_ICR[-1] / self.ro_ICR[-1] if self.ro_ICR[-1]!=0 else 0
+        vy = force * self.dx_ICR[-1] / self.ro_ICR[-1] if self.ro_ICR[-1]!=0 else 0
+        moment_cg = - vx*self.dy + vy*self.dx
+        theta_ICR = math.atan2(vy, vx) * 180 / math.pi
+        
+        # save results
+        self.vx_ICR.append(vx)
+        self.vy_ICR.append(vy)
+        self.deformation_ICR.append(deformation)
+        self.force_ICR.append(force)
+        self.moment_ICR.append(moment_icr)
+        self.moment_ICG.append(moment_cg)
+        self.theta_ICR.append(theta_ICR)
+        
+    def get_moment_ICR(self, ro_max):
+        """
+        Used to calculate the ICR coefficient. In particular, it is called by the
+        BoltGroup object to calculate sum of moment contribution due to unit load P (i.e. sum(Mi1))
+        """
+        D_ULT = 0.34
+        deformation = self.ro_ICR[-1] / ro_max * D_ULT
+        force = (1-math.exp(-10*deformation))**(0.55)
+        moment = force * self.ro_ICR[-1]
+        return moment
