@@ -1,3 +1,23 @@
+<h1 align="center">
+  <br>
+  <img src="https://github.com/wcfrobert/ezbolt/blob/master/doc/logo.png?raw=true" alt="logo" style="zoom:50%;" />
+  <br>
+  Bolt Force Calculation - Elastic and ICR Method
+  <br>
+</h1>
+<p align="center">
+Quickly calculate forces in bolted connections using elastic method and instant center of rotation (ICR) method.
+</p>
+
+
+
+
+
+<div align="center">
+  <img src="https://github.com/wcfrobert/fkit/blob/master/doc/ICRmethod.png?raw=true" alt="demo" style="width: 100%;" />
+</div>
+
+
 # EZBolt
 
 What does this thing do?
