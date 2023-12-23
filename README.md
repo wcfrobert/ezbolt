@@ -1,6 +1,6 @@
 <h1 align="center">
   <br>
-  <img src="https://github.com/wcfrobert/ezbolt/blob/master/doc/logo.png?raw=true" alt="logo" style="zoom:50%;" />
+  <img src="https://github.com/wcfrobert/ezbolt/blob/master/doc/logo.png?raw=true" alt="logo" style="zoom:30%;" />
   <br>
   Bolt Force Calculation - Elastic and ICR Method
   <br>
@@ -11,10 +11,8 @@ Quickly calculate forces in bolted connections using elastic method and instant 
 
 
 
-
-
 <div align="center">
-  <img src="https://github.com/wcfrobert/fkit/blob/master/doc/ICRmethod.png?raw=true" alt="demo" style="width: 100%;" />
+  <img src="https://github.com/wcfrobert/ezbolt/blob/master/doc/ICRmethod.png?raw=true" alt="demo" style="width: 100%;" />
 </div>
 
 
