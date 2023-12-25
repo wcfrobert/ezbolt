@@ -6,13 +6,11 @@
   <br>
 </h1>
 <p align="center">
-Bolted connection force determination via elastic method and instant center of rotation (ICR) method.
+Calculate force distribution in bolted connections and compare results obtained from elastic method and instant center of rotation (ICR) method.
 </p>
 
-
-
 <div align="center">
-  <img src="https://github.com/wcfrobert/ezbolt/blob/master/doc/demo.gif?raw=true" alt="demo" style="width: 100%;" />
+  <img src="https://github.com/wcfrobert/ezbolt/blob/master/doc/demo.gif?raw=true" alt="demo" style="width: 75%;" />
 </div>
 
 
@@ -29,8 +27,9 @@ Bolted connection force determination via elastic method and instant center of r
 
 ## Introduction
 
-EZbolt is a Python script that calculates bolt forces in bolted connections subject to shear and in-plane torsion. It does so using both the Elastic Method and the Instant Center of Rotation (ICR) method as outlined in the AISC steel construction manual. The iterative algorithm to locate the ICR is based on this seminal paper by Donald Brandt: [Rapid Determination of Ultimate Strength of Eccentrically Loaded Bolt Groups.] (https://www.aisc.org/Rapid-Determination-of-Ultimate-Strength-of-Eccentrically-Loaded-Bolt-Groups)
+EZbolt is a Python applet that calculates bolt forces in bolted connections subject to shear and in-plane torsion. It does so using both the Elastic Method and the Instant Center of Rotation (ICR) method as described in the AISC steel construction manual. 
 
+The iterative algorithm to locate the ICR is based on this seminal paper by Donald Brandt: [Rapid Determination of Ultimate Strength of Eccentrically Loaded Bolt Groups.] (https://www.aisc.org/Rapid-Determination-of-Ultimate-Strength-of-Eccentrically-Loaded-Bolt-Groups)
 
 
 
@@ -62,53 +61,51 @@ ezbolt.plotter.plot_ICR(bolt_group)
 
 ```
 
-Preview your bolt group using the plotter.preview() function:
+Preview your bolt group using the `plotter.preview()` function:
 
 <div align="center">
   <img src="https://github.com/wcfrobert/ezbolt/blob/master/doc/preview.png?raw=true" alt="demo" style="width: 50%;" />
 </div>
 
-plotter.plot_elastic() visualizes bolt force from elastic method.
+`plotter.plot_elastic()` visualizes bolt force from elastic method.
 
 <div align="center">
   <img src="https://github.com/wcfrobert/ezbolt/blob/master/doc/elasticmethod.png?raw=true" alt="demo" style="width: 50%;" />
 </div>
 
-plotter.plot_ECR() visualizes bolt forces from elastic center of rotation (ECR) method.
+`plotter.plot_ECR()` visualizes bolt forces from elastic center of rotation (ECR) method.
 
 <div align="center">
   <img src="https://github.com/wcfrobert/ezbolt/blob/master/doc/ECRmethod.png?raw=true" alt="demo" style="width: 50%;" />
 </div>
 
-plotter.plot_ICR() shows bolt forces as calculated using instant center of rotation (ICR) method.
+`plotter.plot_ICR()` shows bolt forces as calculated using instant center of rotation (ICR) method.
 
 <div align="center">
   <img src="https://github.com/wcfrobert/ezbolt/blob/master/doc/ICRmethod.png?raw=true" alt="demo" style="width: 50%;" />
 </div>
 
-BoltGroup.solve() returns a dictionary containing all relevant calculation results:
+`BoltGroup.solve()` returns a dictionary containing all relevant calculation results:
 
-* results["Elastic Method - Superposition"]
-    * ... ["Bolt Capacity"]
-    * ... ["Bolt Demand"]
-    * ... ["Bolt Force Table"]
-    * ... ["DCR"]
-* results["Elastic Method - Center of Rotation"]
-    * ... ["Center of Rotation"]
-    * ... ["Ce"]
-    * ... ["Connection Capacity"]
-    * ... ["Connection Demand"]
-    * ... ["Bolt Force Table"]
-    * ... ["DCR"]
-* results["Instant Center of Rotation Method"]
-    * ... ["ICR"]
-    * ... ["Cu"]
-    * ... ["Connection Capacity"]
-    * ... ["Connection Demand"]
-    * ... ["Bolt Force Tables"]
-    * ... ["DCR"]
-
-
+* `results["Elastic Method - Superposition"]`
+    * `... ["Bolt Capacity"]`
+    * `... ["Bolt Demand"]`
+    * `... ["Bolt Force Table"]`
+    * `... ["DCR"]`
+* `results["Elastic Method - Center of Rotation"]`
+    * `... ["Center of Rotation"]`
+    * `... ["Ce"]`
+    * `... ["Connection Capacity"]`
+    * `... ["Connection Demand"]`
+    * `... ["Bolt Force Table"]`
+    * `... ["DCR"]`
+* `results["Instant Center of Rotation Method"]`
+    * `... ["ICR"]`
+    * `... ["Cu"]`
+    * `... ["Connection Capacity"]`
+    * `... ["Connection Demand"]`
+    * `... ["Bolt Force Tables"]`
+    * `... ["DCR"]`
 
 
 ## Installation
@@ -158,7 +155,6 @@ Installation procedure:
 
 ## Usage
 
-
 Here are all the public methods available to the user:
 
 **Adding Bolts**
@@ -177,8 +173,9 @@ Here are all the public methods available to the user:
 * `ezbolt.plotter.plot_ECR(boltgroup_object)`
 * `ezbolt.plotter.plot_ICR(boltgroup_object)`
 
-
 For further guidance and documentation, you can access the docstring of any method using the help() command. (e.g. help(ezbolt.boltgroup.BoltGroup.add_bolts))
+
+
 
 
 ## Theoretical Background - Elastic Method
