@@ -27,9 +27,7 @@ Calculate force distribution in bolted connections and compare results obtained 
 
 ## Introduction
 
-EZbolt is a Python applet that calculates bolt forces in bolted connections subject to shear and in-plane torsion (Vx, Vy, Mz). It does so using both the Elastic Method and the Instant Center of Rotation (ICR) method as described in the AISC steel construction manual. Unlike the ICR coefficient tables in AISC which is in 15 degree increments, EZbolt can handle any bolt arrangements, any load orientation, and any eccentricity.
-
-The iterative algorithm to locate the ICR is based on this paper by Donald Brandt: [Rapid Determination of Ultimate Strength of Eccentrically Loaded Bolt Groups.](https://www.aisc.org/Rapid-Determination-of-Ultimate-Strength-of-Eccentrically-Loaded-Bolt-Groups)
+EZbolt is a Python applet that calculates bolt forces in bolted connections subject to shear and in-plane torsion. It does so using both the Elastic Method and the Instant Center of Rotation (ICR) method as described in the AISC steel construction manual. Unlike the ICR coefficient tables in AISC which is in 15 degree increments, EZbolt can handle any bolt arrangements, any load orientation, and any eccentricity. The iterative algorithm to locate the ICR is based on this paper by Donald Brandt: [Rapid Determination of Ultimate Strength of Eccentrically Loaded Bolt Groups.](https://www.aisc.org/Rapid-Determination-of-Ultimate-Strength-of-Eccentrically-Loaded-Bolt-Groups)
 
 
 **Disclaimer:** this package is meant for <u>personal and educational use only</u>.
@@ -210,7 +208,7 @@ $$v_{tx} = \frac{M_z (y_i - y_{cg})}{I_z}$$
 $$v_{ty} = \frac{-M_z (x_i - x_{cg})}{I_z}$$
 
 
-The equations above should look very familiar. They're identical to the torsion shear stress equations for beam sections ($$\tau = Tc/J$$). Essentially, bolt force varies linearly radiating from the centroid. Bolts furthest away from the centroid naturally takes more force.
+The equations above should look very familiar. They're identical to the torsion shear stress equations for beam sections. Essentially, bolt force varies linearly radiating from the centroid. Bolts furthest away from the centroid naturally takes more force.
 
 Putting it all together, we use principle of superposition to **superimpose** (add) the bolt demands together. In other words, we can look at each action separately, then add them together at the end.
 
@@ -231,7 +229,7 @@ A less conservative way of determining bolt forces is through the Instant Center
   <img src="https://github.com/wcfrobert/ezbolt/blob/master/doc/aisc2.31.png?raw=true" alt="demo" style="width: 60%;" />
 </div>
 
-The derivations will follow AISC notations which is somewhat different from the notations above. Most notably, we will use $$P$$ to denote applied force instead of $$V$$, and $$R$$ to denote in-plane bolt force instead of $$v$$.
+The derivations will follow AISC notations which is somewhat different from the notations above. Most notably, we will use **P** to denote applied force instead of **V**, and **R** to denote in-plane bolt force instead of **v**.
 
 Rather than assuming elasticity and using geometric properties to determine bolt forces, we assume the bolt furthest from ICR has a deformation of 0.34", other bolts are assumed to have linearly varying deformation based on its distance from ICR (varying from 0" to 0.34"). We can then determine the corresponding force using the **force-deformation relationship** below.
 
@@ -251,7 +249,7 @@ Suppose we know the exact location of ICR, first let's calculate the applied mom
 
 $$M_p = P \times r_o$$
 
-The maximum bolt deformation of 0.34" occurs at the bolt furthest from ICR, the other bolts have deformation varying linearly between 0 to 0.34 based on its distance to the ICR ($$d_i$$)
+The maximum bolt deformation of 0.34" occurs at the bolt furthest from ICR, the other bolts have deformation varying linearly between 0 to 0.34 based on its distance to the ICR ($d_i$)
 
 $$\Delta_{max} = 0.34$$
 
@@ -285,7 +283,7 @@ $$ P = R_{max} \times C$$
 
 $$ C = \frac{\sum (1-e^{-10\Delta_i})^{0.55} d_i}{r_o}$$
 
-Set $$R_{max}$$ equal to the bolt capacity and back-calculate the connection capacity:
+Set $R_{max}$ equal to the bolt capacity and back-calculate the connection capacity:
 
 $$ R_{max} = R_{capacity}$$
 
@@ -293,8 +291,8 @@ $$ P_{capacity} = R_{capacity} \times C$$
 
 Notes:
 
-1. Despite a nonlinear bolt force-deformation, the relationship between max bolt force ($$R_{max}$$) and applied force ($$P$$) is linear. In other words, if applied force doubles, so does maximum bolt force, and vice versa. Embedded in this is the **assumption that eccentricity (e = Mz / P) will remain constant**      
-2. If we substitute 0.34 into the exponential function above, we get 0.9815 as there's a horizontal asymptote and we will never reach 1.0 exactly. We can make a simple adjustment to our "C" equation if we desire. Note that AISC does NOT make this adjustment as it is more conservative to set max bolt-force as $$0.9815R_{max}$$, effectively capping our DCR to 98%.
+1. Despite a nonlinear bolt force-deformation, the relationship between max bolt force ($R_{max}$) and applied force ($P$) is linear. In other words, if applied force doubles, so does maximum bolt force, and vice versa. Embedded in this is the **assumption that eccentricity (e = Mz / P) will remain constant**      
+2. If we substitute 0.34 into the exponential function above, we get 0.9815 as there's a horizontal asymptote and we will never reach 1.0 exactly. We can make a simple adjustment to our "C" equation if we desire. Note that AISC does NOT make this adjustment as it is more conservative to set max bolt-force as $0.9815R_{max}$, effectively capping our DCR to 98%.
 
 $$ (1 - e^{-10(0.34)} )^{0.55} = 0.9815 $$
 
@@ -306,13 +304,13 @@ $$ C = \frac{\sum (1-e^{-10\Delta_i})^{0.55} d_i}{0.9815 r_o}$$
 When the load orientation is completely horizontal or vertical, the ICR location reside on a line connecting CoG and ICR (this covers most cases). However, when the load orientation isn't 0 or 90 degrees, the search space for ICR is two dimensional and implementation becomes much more challenging. Rather than searching the 2-D plane using brute force or some generic optimization strategy, there exists an iterative method that converges on ICR very quickly. **Brandt's method** is fast and efficient, and it is what AISC uses to construct their design tables.
 
 
-1. From applied force $$(P_x, P_y, M_z)$$, calculate load vector orientation ($$\theta$$). Note [atan2](https://en.wikipedia.org/wiki/Atan2) is a specialized arctan function that returns within the range between -180 to 180 degrees, rather than -90 to 90 degrees. This is to obtain a correct and unambiguous value for the angle theta.
+1. From applied force $(P_x, P_y, M_z)$, calculate load vector orientation ($\theta$). Note [atan2](https://en.wikipedia.org/wiki/Atan2) is a specialized arctan function that returns within the range between -180 to 180 degrees, rather than -90 to 90 degrees. This is to obtain a correct and unambiguous value for the angle theta.
 
     $$P = \sqrt{P_x^2 + P_y^2}$$
 
     $$\theta = atan2(\frac{P_y}{P_x})$$
 
-2. Now calculate eccentricity and its x and y components. We can use $$e_x$$ and $$e_y$$ to locate the point of applied load (let's call this point P). We know the line P-ICR is perpendicular to the load vector orientation, hence $$\theta+90^o$$. Note that figures within ICR tables in AISC steel manual is misleading. It seems to imply no vertical eccentricity ($$e_y = 0$$), yet such an assumption would make the load vector non-orthogonal to the ICR.
+2. Now calculate eccentricity and its x and y components. We can use $e_x$ and $e_y$ to locate the point of applied load (let's call this point P). We know the line P-ICR is perpendicular to the load vector orientation, hence $\theta+90^o$. Note that figures within ICR tables in AISC steel manual is misleading. It seems to imply no vertical eccentricity ($$e_y = 0$$), yet such an assumption would make the load vector non-orthogonal to the ICR.
 
     $$e = \frac{M_z}{P}$$
 
@@ -320,7 +318,7 @@ When the load orientation is completely horizontal or vertical, the ICR location
 
     $$e_y = - e \times sin(\theta + 90^o)$$
 
-3. Obtain an initial guess of ICR location per Brandt's method, then calculate distance of line P-ICR ($$r_o$$)
+3. Obtain an initial guess of ICR location per Brandt's method, then calculate distance of line P-ICR ($r_o$)
 
     $$a_x = V_y \times \frac{I_z}{M_z N_{bolt}}$$
 
@@ -340,7 +338,7 @@ When the load orientation is completely horizontal or vertical, the ICR location
 
     $$C = \frac{ \sum((1 - e^{-10 \Delta_i})^{0.55} d_i)}{r_o}$$
             
-5. Next, we need to determine the maximum bolt force ($$R_{max}$$) at the user-specified load magnitude. This can be done through the moment equilibrium equation; hence why we only need to check force equilibrium at the end. Moment equilibrium is established as a matter of course by enforcing a specific value of $$R_{max}$$
+5. Next, we need to determine the maximum bolt force ($R_{max}$) at the user-specified load magnitude. This can be done through the moment equilibrium equation; hence why we only need to check force equilibrium at the end. Moment equilibrium is established as a matter of course by enforcing a specific value of $R_{max}$
 
     $$M_p = V_x r_{oy} - V_y  r_{ox}$$
 
@@ -348,7 +346,7 @@ When the load orientation is completely horizontal or vertical, the ICR location
 
     $$R_{max} = \frac{M_p}{\sum((1 - e^{-10 \Delta_i})^{0.55} d_i)}$$
 
-6. Now that we have $$R_{max}$$, we can calculate the other bolt forces:
+6. Now that we have $R_{max}$, we can calculate the other bolt forces:
 
     $$R_i = R_{max} \times \sum((1 - e^{-10 \Delta_i})^{0.55} d_i)$$
 
