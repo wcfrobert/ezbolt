@@ -1,6 +1,6 @@
 <h1 align="center">
   <br>
-  <img src="https://github.com/wcfrobert/ezbolt/blob/master/doc/logo.png?raw=true" alt="logo" style="zoom:20%;" />
+  <img src="https://github.com/wcfrobert/ezbolt/blob/master/doc/logo.png?raw=true" alt="logo" style="width: 60%;" />
   <br>
   Bolt Force Calculation in Python
   <br>
@@ -66,26 +66,28 @@ ezbolt.plotter.plot_ICR(bolt_group)
 Preview your bolt group using the plotter.preview() function:
 
 <div align="center">
-  <img src="https://github.com/wcfrobert/ezbolt/blob/master/doc/preview.png?raw=true" alt="demo" style="width: 80%;" />
+  <img src="https://github.com/wcfrobert/ezbolt/blob/master/doc/preview.png?raw=true" alt="demo" style="width: 50%;" />
 </div>
 
 plotter.plot_elastic() shows bolt forces as calculated using the elastic method + superposition of forces.
 
 <div align="center">
-  <img src="https://github.com/wcfrobert/ezbolt/blob/master/doc/elasticmethod.png?raw=true" alt="demo" style="width: 80%;" />
+  <img src="https://github.com/wcfrobert/ezbolt/blob/master/doc/elasticmethod.png?raw=true" alt="demo" style="width: 50%;" />
 </div>
 
 plotter.plot_ECR() shows bolt forces as calculated using the elastic method + center of rotation.
 
 <div align="center">
-  <img src="https://github.com/wcfrobert/ezbolt/blob/master/doc/ECRmethod.png?raw=true" alt="demo" style="width: 80%;" />
+  <img src="https://github.com/wcfrobert/ezbolt/blob/master/doc/ECRmethod.png?raw=true" alt="demo" style="width: 50%;" />
 </div>
 
 plotter.plot_ICR() shows bolt forces as calculated using ICR method.
 
 <div align="center">
-  <img src="https://github.com/wcfrobert/ezbolt/blob/master/doc/ICRmethod.png?raw=true" alt="demo" style="width: 80%;" />
+  <img src="https://github.com/wcfrobert/ezbolt/blob/master/doc/ICRmethod.png?raw=true" alt="demo" style="width: 50%;" />
 </div>
+
+
 
 
 ## Installation
@@ -153,6 +155,10 @@ Here is a comprehensive list of all the commands that is available to the user.
 **Visualizations**
 
 * `ezbolt.plotter.preview()`
+
+
+
+
 
 
 ## Theoretical Background - Elastic Method
