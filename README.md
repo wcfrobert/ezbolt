@@ -66,25 +66,25 @@ ezbolt.plotter.plot_ICR(bolt_group)
 Preview your bolt group using the plotter.preview() function:
 
 <div align="center">
-  <img src="https://github.com/wcfrobert/fkit/blob/master/doc/preview.png?raw=true" alt="demo" style="width: 80%;" />
+  <img src="https://github.com/wcfrobert/ezbolt/blob/master/doc/preview.png?raw=true" alt="demo" style="width: 80%;" />
 </div>
 
 plotter.plot_elastic() shows bolt forces as calculated using the elastic method + superposition of forces.
 
 <div align="center">
-  <img src="https://github.com/wcfrobert/fkit/blob/master/doc/elasticmethod.png?raw=true" alt="demo" style="width: 80%;" />
+  <img src="https://github.com/wcfrobert/ezbolt/blob/master/doc/elasticmethod.png?raw=true" alt="demo" style="width: 80%;" />
 </div>
 
 plotter.plot_ECR() shows bolt forces as calculated using the elastic method + center of rotation.
 
 <div align="center">
-  <img src="https://github.com/wcfrobert/fkit/blob/master/doc/ECRmethod.png?raw=true" alt="demo" style="width: 80%;" />
+  <img src="https://github.com/wcfrobert/ezbolt/blob/master/doc/ECRmethod.png?raw=true" alt="demo" style="width: 80%;" />
 </div>
 
 plotter.plot_ICR() shows bolt forces as calculated using ICR method.
 
 <div align="center">
-  <img src="https://github.com/wcfrobert/fkit/blob/master/doc/ICRmethod.png?raw=true" alt="demo" style="width: 80%;" />
+  <img src="https://github.com/wcfrobert/ezbolt/blob/master/doc/ICRmethod.png?raw=true" alt="demo" style="width: 80%;" />
 </div>
 
 
