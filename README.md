@@ -1,18 +1,18 @@
 <h1 align="center">
   <br>
-  <img src="https://github.com/wcfrobert/ezbolt/blob/master/doc/logo.png?raw=true" alt="logo" style="zoom:30%;" />
+  <img src="https://github.com/wcfrobert/ezbolt/blob/master/doc/logo.png?raw=true" alt="logo" style="zoom:20%;" />
   <br>
-  Bolt Force Calculation - Elastic and ICR Method
+  Bolt Force Calculation in Python
   <br>
 </h1>
 <p align="center">
-Quickly calculate forces in bolted connections using elastic method and instant center of rotation (ICR) method.
+Bolted connection force determination via elastic method and instant center of rotation (ICR) method.
 </p>
 
 
 
 <div align="center">
-  <img src="https://github.com/wcfrobert/ezbolt/blob/master/doc/ICRmethod.png?raw=true" alt="demo" style="width: 100%;" />
+  <img src="https://github.com/wcfrobert/ezbolt/blob/master/doc/demo.gif?raw=true" alt="demo" style="width: 100%;" />
 </div>
 
 

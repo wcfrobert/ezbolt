@@ -424,6 +424,120 @@ def plot_ICR(boltgroup):
 
 
 
+def plot_ICR_anim(boltgroup):
+    """
+    temporary function to produce animations
+    """
+    fig, axs = plt.subplots(figsize=[8,8])
+    # arrow size scaling set up. 
+    # Larrow_max is set to 20% of x and y bound. Qarrow_max the associated amplitude. 
+    # Therefore, L = (q/Qarrow_max) * Larrow_max
+    ybound = max([b.y for b in boltgroup.bolts]) - min([b.y for b in boltgroup.bolts])
+    xbound = max([b.x for b in boltgroup.bolts]) - min([b.x for b in boltgroup.bolts])
+    Larrow_max = max(xbound,ybound) * 0.20
+    Qarrow_max = max([abs(b.force_ICR[-1]) for b in boltgroup.bolts])
+    #Qarrow_max = boltgroup.V_resultant
+    ARROWWIDTH = 0.03
+    
+    information_text = "Px = {:.0f} k\n".format(boltgroup.Vx) +\
+                        "Py = {:.0f} k\n".format(boltgroup.Vy) +\
+                        "Mz = {:.0f} k.in\n".format(boltgroup.torsion)
+    axs.annotate(information_text,
+                 xy=(0,0), 
+                 xytext=(0.98,-0.02), 
+                 textcoords='axes fraction', 
+                 fontsize=14, 
+                 c="black", 
+                 ha="right", 
+                 va="bottom",
+                 zorder=2)
+    
+    # plot bolts
+    for bolt in boltgroup.bolts:
+        axs.plot([bolt.x],[bolt.y], 
+                 marker="h",
+                 markerfacecolor="lightgray",
+                 markeredgecolor="black",
+                 markeredgewidth=2,
+                 markersize=16,
+                 zorder=2,
+                 linestyle="none")
+        axs.annotate("({:.1f} k, {:.1f} k)".format(bolt.vx_ICR[-1], bolt.vy_ICR[-1]),
+                     xy=(bolt.x, bolt.y), 
+                     xycoords='data', 
+                     xytext=(0, -16), 
+                     textcoords='offset points', 
+                     fontsize=14, 
+                     c="black", 
+                     ha="center",
+                     va="top",
+                     zorder=1,
+                     bbox=dict(boxstyle='round', facecolor='white'))
+    # plot Cog
+    axs.plot(boltgroup.x_cg, boltgroup.y_cg, marker="*",c="red",markersize=8,zorder=3,linestyle="none")
+
+    # plot ICR
+    if boltgroup.torsion != 0:
+        axs.plot(boltgroup.ICR_x[-1], boltgroup.ICR_y[-1], marker="*",c="red",markersize=14,zorder=3,linestyle="none")
+        axs.annotate("ICR",
+                     xy=(boltgroup.ICR_x[-1], boltgroup.ICR_y[-1]), xycoords='data', color="red",
+                     xytext=(-5, -5), textcoords='offset points', fontsize=16, va="top", ha="right")
+    
+    # bolts reaction arrows
+    for bolt in boltgroup.bolts:
+        L_arrow = (abs(bolt.force_ICR[-1]) / Qarrow_max) * Larrow_max
+        dx_arrow = L_arrow * math.cos(math.radians(bolt.theta_ICR[-1]))
+        dy_arrow = L_arrow * math.sin(math.radians(bolt.theta_ICR[-1]))
+        axs.arrow(bolt.x,
+                  bolt.y, 
+                  dx_arrow, 
+                  dy_arrow, 
+                  width=ARROWWIDTH,
+                  head_width=8*ARROWWIDTH, 
+                  head_length=8*ARROWWIDTH,
+                  fc='black', 
+                  ec='black', 
+                  zorder=2)
+    
+    # applied force arrows
+    if boltgroup.V_resultant != 0:
+        L_arrow = Larrow_max * 1.4
+        dx_arrow = L_arrow * math.cos(math.radians(boltgroup.theta))
+        dy_arrow = L_arrow * math.sin(math.radians(boltgroup.theta))
+        x_arrow = boltgroup.x_cg + boltgroup.ecc_x
+        y_arrow = boltgroup.y_cg + boltgroup.ecc_y
+        axs.axline([x_arrow-dx_arrow, y_arrow-dy_arrow], 
+                      [x_arrow, y_arrow],
+                      linewidth=1,
+                      linestyle="--",
+                      color="black")
+        axs.axline([x_arrow, y_arrow], 
+                      [boltgroup.ICR_x[-1], boltgroup.ICR_y[-1]],
+                      linewidth=1,
+                      linestyle="--",
+                      color="black")
+        axs.arrow(x_arrow-dx_arrow, 
+                  y_arrow-dy_arrow, 
+                  dx_arrow, 
+                  dy_arrow, 
+                  width=ARROWWIDTH,
+                  head_width=8*ARROWWIDTH, 
+                  head_length=8*ARROWWIDTH,
+                  fc='red', 
+                  ec='red', 
+                  zorder=3,
+                  head_starts_at_zero=False,
+                  length_includes_head=True)
+
+    # styling
+    fig.suptitle("Instant Center of Rotation Method (Cu = {:.2f})".format(boltgroup.Cu[-1]), fontweight="bold", fontsize=16)
+    #axs.set_aspect('equal', 'datalim')
+    axs.set_xlim([-2,8])
+    axs.set_ylim([-2,8])
+    plt.tight_layout()
+    
+    return fig
+
 
 
 

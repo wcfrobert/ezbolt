@@ -13,7 +13,7 @@ def main():
     ezbolt.plotter.preview(bolt_group)
     
     # calculate bolt force with elastic method
-    results = bolt_group.solve(Vx=vx, Vy=vy, torsion=Mz)
+    results = bolt_group.solve(Vx=50, Vy=50, torsion=200)
     
     # plot bolt forces
     ezbolt.plotter.plot_elastic(bolt_group)
@@ -24,34 +24,6 @@ def main():
 
 
 
-# exhaustive list of input for debugging
-vx,vy,Mz = 50,50,200
-# vx,vy,Mz = 50,50,-200
-# vx,vy,Mz = 50,50,0
-# vx,vy,Mz = 50,-50,200
-# vx,vy,Mz = 50,-50,-200
-# vx,vy,Mz = 50,-50,0
-# vx,vy,Mz = 50,0,200
-# vx,vy,Mz = 50,0,-200
-# vx,vy,Mz = 50,0,0
-# vx,vy,Mz = -50,50,200
-# vx,vy,Mz = -50,50,-200
-# vx,vy,Mz = -50,50,0
-# vx,vy,Mz = -50,-50,200
-# vx,vy,Mz = -50,-50,-200
-# vx,vy,Mz = -50,-50,0
-# vx,vy,Mz = -50,0,200
-# vx,vy,Mz = -50,0,-200
-# vx,vy,Mz = -50,0,0
-# vx,vy,Mz = 0,50,200
-# vx,vy,Mz = 0,50,-200
-# vx,vy,Mz = 0,50,0
-# vx,vy,Mz = 0,-50,200
-# vx,vy,Mz = 0,-50,-200
-# vx,vy,Mz = 0,-50,0
-# vx,vy,Mz = 0,0,200
-# vx,vy,Mz = 0,0,-200
-# vx,vy,Mz = 0,0,0
 
 
 if __name__ == '__main__':

@@ -385,7 +385,7 @@ class BoltGroup:
             print("Searching for location of ICR using Brandt's method...")
             tol = 0.01
             N_iter = 0
-            max_iter = 200
+            max_iter = 1000
             fxx = []
             fyy = []
             residual = []
@@ -400,8 +400,8 @@ class BoltGroup:
                 else:
                     # I reduced ax, ay by a factor of 5 to ensure convergence with smaller step
                     # some configurations of load and bolts leads to infinite cycles and no convergence
-                    ax = fyy[-1] * self.Iz / self.torsion / self.N_bolt/5
-                    ay = fxx[-1] * self.Iz / self.torsion / self.N_bolt/5
+                    ax = fyy[-1] * self.Iz / self.torsion / self.N_bolt/2
+                    ay = fxx[-1] * self.Iz / self.torsion / self.N_bolt/2
                     ICR_x = self.ICR_x[-1] - ax
                     ICR_y = self.ICR_y[-1] + ay
                     ICR_ex = self.ecc_ICRx[-1] + ax
@@ -486,7 +486,7 @@ class BoltGroup:
                 # end loop if maximum number of iterations exceeded
                 N_iter +=1
                 if N_iter > max_iter:
-                    raise RuntimeError("could not converge on ICR after 200 iterations. Ending solver.")
+                    raise RuntimeError("could not converge on ICR after 1000 iterations. Ending solver.")
          
                 
          
