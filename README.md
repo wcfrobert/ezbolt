@@ -310,7 +310,7 @@ When the load orientation is completely horizontal or vertical, the ICR location
 
     $$\theta = atan2(\frac{P_y}{P_x})$$
 
-2. Now calculate eccentricity and its x and y components. We can use $e_x$ and $e_y$ to locate the point of applied load (let's call this point P). We know the line P-ICR is perpendicular to the load vector orientation, hence $\theta+90^o$. Note that figures within ICR tables in AISC steel manual is misleading. It seems to imply no vertical eccentricity ($$e_y = 0$$), yet such an assumption would make the load vector non-orthogonal to the ICR.
+2. Now calculate eccentricity and its x and y components. We can use $e_x$ and $e_y$ to locate the point of applied load (let's call this point P). We know the line P-ICR is perpendicular to the load vector orientation, hence $\theta+90^o$. Note that figures within ICR tables in AISC steel manual is misleading. It seems to imply no vertical eccentricity ($e_y = 0$), yet such an assumption would make the load vector non-orthogonal to the ICR.
 
     $$e = \frac{M_z}{P}$$
 
@@ -392,7 +392,7 @@ When the load orientation is completely horizontal or vertical, the ICR location
 * Sign convention follows the right-hand rule. right is +X, top is +Y, counter-clockwise is positive torsion. Note that since we are only concerned with in-plane forces, only the highlighted vectors are relevant.
 
 <div align="center">
-  <img src="https://github.com/wcfrobert/ezbolt/blob/master/doc/signconvention.png?raw=true" alt="demo" style="width: 50%;" />
+  <img src="https://github.com/wcfrobert/ezbolt/blob/master/doc/signconvention.png?raw=true" alt="demo" style="width: 70%;" />
 </div>
 
 * Units are in (kip, in) unless otherwise noted
