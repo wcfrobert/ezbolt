@@ -6,7 +6,7 @@
   <br>
 </h1>
 <p align="center">
-Calculate force distribution in bolted connections and compare results obtained from elastic method and instant center of rotation (ICR) method.
+Calculate bolt forces with Elastic Method and Instant Center of Rotation (ICR) method.
 </p>
 
 <div align="center">
@@ -27,7 +27,7 @@ Calculate force distribution in bolted connections and compare results obtained 
 
 ## Introduction
 
-EZbolt is a Python applet that calculates bolt forces in bolted connections subject to shear and in-plane torsion. It does so using both the Elastic Method and the Instant Center of Rotation (ICR) method as described in the AISC steel construction manual. Unlike the ICR coefficient tables in AISC which is in 15 degree increments, EZbolt can handle any bolt arrangements, any load orientation, and any eccentricity. The iterative algorithm to locate the ICR is based on this paper by Donald Brandt: [Rapid Determination of Ultimate Strength of Eccentrically Loaded Bolt Groups.](https://www.aisc.org/Rapid-Determination-of-Ultimate-Strength-of-Eccentrically-Loaded-Bolt-Groups)
+EZbolt is a Python program that calculates bolt forces in a bolt group subject to shear and in-plane torsion. It does so using both the Elastic Method and the Instant Center of Rotation (ICR) method as outlined in the AISC steel construction manual. The iterative algorithm for locating the center of rotation is explained in this paper by Donald Brandt: [Rapid Determination of Ultimate Strength of Eccentrically Loaded Bolt Groups.](https://www.aisc.org/Rapid-Determination-of-Ultimate-Strength-of-Eccentrically-Loaded-Bolt-Groups). Unlike the ICR coefficient tables in the steel construction manual which is provided in 15 degree increments, EZbolt can handle **any bolt arrangements, any load orientation, and any eccentricity**.
 
 
 **Disclaimer:** this package is meant for <u>personal and educational use only</u>.
@@ -43,7 +43,7 @@ import ezbolt
 # initialize a bolt group
 bolt_group = ezbolt.boltgroup.BoltGroup()
 
-# add bolts
+# add a 3x3 bolt group with 6" width and 6" depth with lower left corner located at (0,0)
 bolt_group.add_bolts(xo=0, yo=0, width=6, height=6, nx=3, ny=3)
 
 # preview geometry
@@ -59,25 +59,25 @@ ezbolt.plotter.plot_ICR(bolt_group)
 
 ```
 
-Preview your bolt group using the `plotter.preview()` function:
+`plotter.preview()` plots a bolt group preview:
 
 <div align="center">
   <img src="https://github.com/wcfrobert/ezbolt/blob/master/doc/preview.png?raw=true" alt="demo" style="width: 50%;" />
 </div>
 
-`plotter.plot_elastic()` visualizes bolt force from elastic method.
+`plotter.plot_elastic()` shows bolt force calculated from elastic method.
 
 <div align="center">
   <img src="https://github.com/wcfrobert/ezbolt/blob/master/doc/elasticmethod.png?raw=true" alt="demo" style="width: 50%;" />
 </div>
 
-`plotter.plot_ECR()` visualizes bolt forces from elastic center of rotation (ECR) method.
+`plotter.plot_ECR()` shows bolt forces calculated from elastic center of rotation (ECR) method.
 
 <div align="center">
   <img src="https://github.com/wcfrobert/ezbolt/blob/master/doc/ECRmethod.png?raw=true" alt="demo" style="width: 50%;" />
 </div>
 
-`plotter.plot_ICR()` shows bolt forces as calculated using instant center of rotation (ICR) method.
+`plotter.plot_ICR()` shows bolt forces calculated from instant center of rotation (ICR) method.
 
 <div align="center">
   <img src="https://github.com/wcfrobert/ezbolt/blob/master/doc/ICRmethod.png?raw=true" alt="demo" style="width: 50%;" />
@@ -207,9 +207,6 @@ $$v_{tx} = \frac{M_z (y_i - y_{cg})}{I_z}$$
 
 $$v_{ty} = \frac{-M_z (x_i - x_{cg})}{I_z}$$
 
-
-The equations above should look very familiar. They're identical to the torsion shear stress equations for beam sections. Essentially, bolt force varies linearly radiating from the centroid. Bolts furthest away from the centroid naturally takes more force.
-
 Putting it all together, we use principle of superposition to **superimpose** (add) the bolt demands together. In other words, we can look at each action separately, then add them together at the end.
 
 $$v_{x} = v_{dx} + v_{tx}$$
@@ -218,18 +215,12 @@ $$v_{y} = v_{dy} + v_{ty}$$
 
 $$v_{resultant} = \sqrt{v_{x}^2 + v_{y}^2}$$
 
-The key assumption of elastic method is that rotational and translational actions are decoupled and do not influence each other. This is technically not true and result in conservative results.
+The key assumption of elastic method is that rotational and translational actions are decoupled and do not influence each other. This is not true and produces conservative results.
 
 
 ## Theoretical Background - ICR Method
 
 A less conservative way of determining bolt forces is through the Instant Center of Rotation **(ICR)** method. The underlying theory is illustrated in the figure below. In short, when a bolt group is subjected to combined in-plane force and torsion, the bolt force and applied force vectors **revolve around an imaginary center**. The ICR method is conceptually simple, but identifying the ICR location will require iteration.
-
-<div align="center">
-  <img src="https://github.com/wcfrobert/ezbolt/blob/master/doc/aisc2.31.png?raw=true" alt="demo" style="width: 60%;" />
-</div>
-
-The derivations will follow AISC notations which is somewhat different from the notations above. Most notably, we will use **P** to denote applied force instead of **V**, and **R** to denote in-plane bolt force instead of **v**.
 
 Rather than assuming elasticity and using geometric properties to determine bolt forces, we assume the bolt furthest from ICR has a deformation of 0.34", other bolts are assumed to have linearly varying deformation based on its distance from ICR (varying from 0" to 0.34"). We can then determine the corresponding force using the **force-deformation relationship** below.
 
@@ -244,6 +235,12 @@ $$\sum F_x = 0 = P_x -\sum R_{ix}$$
 $$\sum F_y = 0 = P_y -\sum R_{iy}$$
 
 $$\sum M = 0 = M_z -\sum m_i$$
+
+<div align="center">
+  <img src="https://github.com/wcfrobert/ezbolt/blob/master/doc/aisc2.31.png?raw=true" alt="demo" style="width: 60%;" />
+</div>
+
+The derivations will follow AISC notations which is somewhat different from the notations above. Most notably, we will use **P** to denote applied force instead of **V**, and **R** to denote in-plane bolt force instead of **v**.
 
 Suppose we know the exact location of ICR, first let's calculate the applied moment with respect to this new center.
 
@@ -340,7 +337,7 @@ When the load orientation is completely horizontal or vertical, the ICR location
             
 5. Next, we need to determine the maximum bolt force ($R_{max}$) at the user-specified load magnitude. This can be done through the moment equilibrium equation; hence why we only need to check force equilibrium at the end. Moment equilibrium is established as a matter of course by enforcing a specific value of $R_{max}$
 
-    $$M_p = V_x r_{oy} - V_y  r_{ox}$$
+    $$M_p = P_x r_{oy} - P_y  r_{ox}$$
 
     $$M_r = R_{max} \times \sum((1 - e^{-10 \Delta_i})^{0.55} d_i)$$
 
@@ -392,7 +389,7 @@ When the load orientation is completely horizontal or vertical, the ICR location
 * Sign convention follows the right-hand rule. right is +X, top is +Y, counter-clockwise is positive torsion. Note that since we are only concerned with in-plane forces, only the highlighted vectors are relevant.
 
 <div align="center">
-  <img src="https://github.com/wcfrobert/ezbolt/blob/master/doc/signconvention.png?raw=true" alt="demo" style="width: 70%;" />
+  <img src="https://github.com/wcfrobert/ezbolt/blob/master/doc/signconvention.png?raw=true" alt="demo" style="width: 75%;" />
 </div>
 
 * Units are in (kip, in) unless otherwise noted
