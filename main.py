@@ -10,7 +10,7 @@ bolt_group.add_bolts(xo=0, yo=0, width=6, height=6, nx=3, ny=3)
 ezbolt.plotter.preview(bolt_group)
 
 # calculate bolt force with elastic method
-results = bolt_group.solve(Vx=50, Vy=50, torsion=200)
+results = bolt_group.solve(Vx=0, Vy=-50, torsion=-200)
 
 # plot bolt forces
 ezbolt.plotter.plot_elastic(bolt_group)

@@ -184,8 +184,8 @@ class BoltGroup:
         """
         self.x_cg = sum([b.x / self.N_bolt for b in self.bolts])
         self.y_cg = sum([b.y / self.N_bolt for b in self.bolts])
-        self.Ix = sum([(b.x - self.x_cg)**2 for b in self.bolts])
-        self.Iy = sum([(b.y - self.y_cg)**2 for b in self.bolts])
+        self.Iy = sum([(b.x - self.x_cg)**2 for b in self.bolts])
+        self.Ix = sum([(b.y - self.y_cg)**2 for b in self.bolts])
         self.Ixy = sum([(b.y - self.y_cg)*(b.x - self.x_cg) for b in self.bolts])
         self.Iz = self.Ix + self.Iy
         for bolt in self.bolts:
