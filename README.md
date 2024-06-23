@@ -149,7 +149,11 @@ Installation procedure:
     ```
     py main.py
     ```
+Pip install is available:
 
+```
+pip install ezbolt
+```
 
 ## Usage
 
