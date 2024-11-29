@@ -8,7 +8,7 @@ def preview(boltgroup):
     Preview bolt configuration
     """   
     # plot bolts
-    fig, axs = plt.subplots(1,2, gridspec_kw={"width_ratios":[1,3]}, figsize=[8,6])
+    fig, axs = plt.subplots(1,2, gridspec_kw={"width_ratios":[1,3]}, figsize=[10,6], dpi=200)
     for bolt in boltgroup.bolts :
         axs[1].plot([bolt.x],[bolt.y], 
                  marker="h",
@@ -29,9 +29,10 @@ def preview(boltgroup):
                      c = "black")
         
     # plot Cog
-    axs[1].plot(boltgroup.x_cg, boltgroup.y_cg, marker="*",c="red",markersize=8,zorder=2,linestyle="none")
-    axs[1].annotate("CoR",xy=(boltgroup.x_cg, boltgroup.y_cg), xycoords='data', color="red",
-                 xytext=(5, -5), textcoords='offset points', fontsize=14, va="top", zorder=3)
+    axs[1].plot(boltgroup.x_cg, boltgroup.y_cg, marker="X",c="darkblue",markersize=8,zorder=2,linestyle="none")
+    # axs[1].annotate("CoR",xy=(boltgroup.x_cg, boltgroup.y_cg), xycoords='data', color="red",
+    #              xytext=(5, -5), textcoords='offset points', fontsize=14, va="top", zorder=3)
+    
     
     # annotation for bolt group properties
     information_text = "Number of Bolts: {} \n".format(boltgroup.N_bolt) +\
@@ -42,9 +43,20 @@ def preview(boltgroup):
     axs[0].annotate(information_text, (0.1,0.6), xycoords='axes fraction', fontsize=14, va="top", ha="left")
 
     # styling
-    axs[1].set_aspect('equal', 'datalim')
     axs[0].axis("off")
+    fig.suptitle("Bolt Group Preview", fontweight="bold", fontsize=16)
     plt.tight_layout()
+    
+    
+    # set axis limit, first use auto, then expand by 10% to not clip annotations
+    axs[1].set_aspect('equal', 'datalim')
+    x_min, x_max = axs[1].get_xlim()
+    y_min, y_max = axs[1].get_ylim()
+    x_length = x_max - x_min
+    y_length = y_max - y_min
+    axs[1].set_xlim(x_min - 0.1*x_length, x_max + 0.1*x_length)
+    axs[1].set_ylim(y_min - 0.1*y_length, y_max + 0.1*y_length)
+    
     return fig
 
 
@@ -52,7 +64,7 @@ def plot_elastic(boltgroup):
     """
     Plot bolt forces from elastic method
     """
-    fig, axs = plt.subplots(1,2, gridspec_kw={"width_ratios":[1.3,4]}, figsize=[10,6])
+    fig, axs = plt.subplots(1,2, gridspec_kw={"width_ratios":[1.3,4]}, figsize=[10,6], dpi=200)
     
     # arrow size scaling set up. 
     # Larrow_max is set to 20% of x and y bound. Qarrow_max the associated amplitude. 
@@ -95,7 +107,7 @@ def plot_elastic(boltgroup):
                      xycoords='data', 
                      xytext=(0, -16), 
                      textcoords='offset points', 
-                     fontsize=14, 
+                     fontsize=10, 
                      c="black", 
                      ha="center",
                      va="top",
@@ -103,7 +115,7 @@ def plot_elastic(boltgroup):
                      bbox=dict(boxstyle='round', facecolor='white'))
     
     # plot Cog
-    axs[1].plot(boltgroup.x_cg, boltgroup.y_cg, marker="*",c="red",markersize=8,zorder=3,linestyle="none")
+    axs[1].plot(boltgroup.x_cg, boltgroup.y_cg, marker="X",c="darkblue",markersize=8,zorder=2,linestyle="none")
 
     # bolts reaction arrows
     for bolt in boltgroup.bolts:
@@ -153,8 +165,17 @@ def plot_elastic(boltgroup):
         
     # styling
     fig.suptitle("Elastic Method - Superposition", fontweight="bold", fontsize=16)
-    axs[1].set_aspect('equal', 'datalim')
     axs[0].axis("off")
+    
+    # set axis limit, first use auto, then expand by 10% to not clip annotations
+    axs[1].set_aspect('equal', 'datalim')
+    x_min, x_max = axs[1].get_xlim()
+    y_min, y_max = axs[1].get_ylim()
+    x_length = x_max - x_min
+    y_length = y_max - y_min
+    axs[1].set_xlim(x_min - 0.2*x_length, x_max + 0.2*x_length)
+    axs[1].set_ylim(y_min - 0.2*y_length, y_max + 0.2*y_length)
+    
     plt.tight_layout()
     return fig
 
@@ -218,21 +239,21 @@ def plot_ECR(boltgroup):
                      xycoords='data', 
                      xytext=(0, -16), 
                      textcoords='offset points', 
-                     fontsize=14, 
+                     fontsize=10, 
                      c="black", 
                      ha="center",
                      va="top",
                      zorder=1,
                      bbox=dict(boxstyle='round', facecolor='white'))
     # plot Cog
-    axs[1].plot(boltgroup.x_cg, boltgroup.y_cg, marker="*",c="red",markersize=8,zorder=3,linestyle="none")
+    axs[1].plot(boltgroup.x_cg, boltgroup.y_cg, marker="X",c="darkblue",markersize=8,zorder=2,linestyle="none")
 
     # plot ECR
     if boltgroup.torsion != 0:
         axs[1].plot(boltgroup.ECR_x, boltgroup.ECR_y, marker="*",c="red",markersize=14,zorder=3,linestyle="none")
-        axs[1].annotate("ECR",
-                     xy=(boltgroup.ECR_x, boltgroup.ECR_y), xycoords='data', color="red",
-                     xytext=(-5, -5), textcoords='offset points', fontsize=16, va="top", ha="right")
+        # axs[1].annotate("ECR",
+        #              xy=(boltgroup.ECR_x, boltgroup.ECR_y), xycoords='data', color="red",
+        #              xytext=(-5, -5), textcoords='offset points', fontsize=16, va="top", ha="right")
     
     # bolts reaction arrows
     for bolt in boltgroup.bolts:
@@ -282,8 +303,17 @@ def plot_ECR(boltgroup):
         
     # styling
     fig.suptitle("Elastic Method - Center of Rotation", fontweight="bold", fontsize=16)
-    axs[1].set_aspect('equal', 'datalim')
     axs[0].axis("off")
+    
+    # set axis limit, first use auto, then expand by 10% to not clip annotations
+    axs[1].set_aspect('equal', 'datalim')
+    x_min, x_max = axs[1].get_xlim()
+    y_min, y_max = axs[1].get_ylim()
+    x_length = x_max - x_min
+    y_length = y_max - y_min
+    axs[1].set_xlim(x_min - 0.2*x_length, x_max + 0.2*x_length)
+    axs[1].set_ylim(y_min - 0.2*y_length, y_max + 0.2*y_length)
+    
     plt.tight_layout()
     
     return fig
@@ -302,7 +332,7 @@ def plot_ICR(boltgroup):
                      fontsize=14)
         return fig
     
-    fig, axs = plt.subplots(1,2, gridspec_kw={"width_ratios":[1.5,4]}, figsize=[10,6])
+    fig, axs = plt.subplots(1,2, gridspec_kw={"width_ratios":[1.5,4]}, figsize=[10,6], dpi=200)
     # arrow size scaling set up. 
     # Larrow_max is set to 20% of x and y bound. Qarrow_max the associated amplitude. 
     # Therefore, L = (q/Qarrow_max) * Larrow_max
@@ -349,21 +379,21 @@ def plot_ICR(boltgroup):
                      xycoords='data', 
                      xytext=(0, -16), 
                      textcoords='offset points', 
-                     fontsize=14, 
+                     fontsize=10, 
                      c="black", 
                      ha="center",
                      va="top",
                      zorder=1,
                      bbox=dict(boxstyle='round', facecolor='white'))
     # plot Cog
-    axs[1].plot(boltgroup.x_cg, boltgroup.y_cg, marker="*",c="red",markersize=8,zorder=3,linestyle="none")
+    axs[1].plot(boltgroup.x_cg, boltgroup.y_cg, marker="X",c="darkblue",markersize=8,zorder=2,linestyle="none")
 
     # plot ICR
     if boltgroup.torsion != 0:
         axs[1].plot(boltgroup.ICR_x[-1], boltgroup.ICR_y[-1], marker="*",c="red",markersize=14,zorder=3,linestyle="none")
-        axs[1].annotate("ICR",
-                     xy=(boltgroup.ICR_x[-1], boltgroup.ICR_y[-1]), xycoords='data', color="red",
-                     xytext=(-5, -5), textcoords='offset points', fontsize=16, va="top", ha="right")
+        # axs[1].annotate("ICR",
+        #              xy=(boltgroup.ICR_x[-1], boltgroup.ICR_y[-1]), xycoords='data', color="red",
+        #              xytext=(-5, -5), textcoords='offset points', fontsize=16, va="top", ha="right")
     
     # bolts reaction arrows
     for bolt in boltgroup.bolts:
@@ -413,8 +443,17 @@ def plot_ICR(boltgroup):
         
     # styling
     fig.suptitle("Instant Center of Rotation Method", fontweight="bold", fontsize=16)
-    axs[1].set_aspect('equal', 'datalim')
     axs[0].axis("off")
+    
+    # set axis limit, first use auto, then expand by 10% to not clip annotations
+    axs[1].set_aspect('equal', 'datalim')
+    x_min, x_max = axs[1].get_xlim()
+    y_min, y_max = axs[1].get_ylim()
+    x_length = x_max - x_min
+    y_length = y_max - y_min
+    axs[1].set_xlim(x_min - 0.2*x_length, x_max + 0.2*x_length)
+    axs[1].set_ylim(y_min - 0.2*y_length, y_max + 0.2*y_length)
+    
     plt.tight_layout()
     
     return fig

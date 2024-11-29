@@ -191,7 +191,7 @@ class BoltGroup:
         for bolt in self.bolts:
             bolt.update_geometry(self.x_cg, self.y_cg)
     
-    def solve(self, Vx, Vy, torsion, bolt_capacity=17.9):
+    def solve(self, Vx, Vy, torsion, bolt_capacity=17.9, verbose=True):
         """
         Public method called by user to solve for bolt forces using three methods:
             1. Elastic Method - Superposition
@@ -232,7 +232,7 @@ class BoltGroup:
         # solve with all three methods
         result_elastic = self.solve_elastic()
         result_ECR = self.solve_ECR()
-        result_ICR = self.solve_ICR()
+        result_ICR = self.solve_ICR(verbose)
         
         # return a dictionary containing all result dataframes
         self.results = dict()
@@ -372,7 +372,7 @@ class BoltGroup:
             return_dict["DCR"] = self.P_demand / self.P_capacity
         return return_dict
     
-    def solve_ICR(self):
+    def solve_ICR(self, verbose):
         """
         Solve for bolt forces using ICR method.
         """
@@ -382,7 +382,8 @@ class BoltGroup:
         
         # possibility #2: Typical applied load. Iteration needed to find ICR
         elif self.V_resultant !=0:
-            print("Searching for location of ICR using Brandt's method...")
+            if verbose:
+                print("Searching for location of ICR using Brandt's method...")
             tol = 0.01
             N_iter = 0
             max_iter = 1000
@@ -440,7 +441,8 @@ class BoltGroup:
                 fxx.append(sumFx + self.Vx)
                 fyy.append(sumFy + self.Vy)
                 residual.append(math.sqrt(fxx[-1]**2 + fyy[-1]**2))
-                print("\t Trial {}: ({:.2f}, {:.2f}). fxx = {:.2f}, fyy = {:.2f}".format(N_iter+1, self.ICR_x[-1], self.ICR_y[-1], fxx[-1], fyy[-1]))
+                if verbose:
+                    print("\t Trial {}: ({:.2f}, {:.2f}). fxx = {:.2f}, fyy = {:.2f}".format(N_iter+1, self.ICR_x[-1], self.ICR_y[-1], fxx[-1], fyy[-1]))
 
                 # tabulate bolt forces at each step
                 result_dict=dict()
@@ -470,7 +472,8 @@ class BoltGroup:
 
                 # end loop if equilibrium is obtained
                 if residual[-1] < tol:
-                    print("\t Success! ICR found at ({:.2f}, {:.2f})".format(self.ICR_x[-1], self.ICR_y[-1]))
+                    if verbose:
+                        print("\t Success! ICR found at ({:.2f}, {:.2f})".format(self.ICR_x[-1], self.ICR_y[-1]))
                     self.P_demand_ICR = self.V_resultant
                     self.P_capacity_ICR = self.Cu[-1] * self.bolt_capacity
                     
@@ -486,6 +489,7 @@ class BoltGroup:
                 # end loop if maximum number of iterations exceeded
                 N_iter +=1
                 if N_iter > max_iter:
+                    print(f"nbolt = {self.N_bolt}\nVx = {self.Vx}\nVy = {self.Vy}\nMz = {self.torsion}\n")
                     raise RuntimeError("could not converge on ICR after 1000 iterations. Ending solver.")
          
                 
