@@ -12,5 +12,5 @@ from ezbolt.boltgroup import BoltGroup
 from ezbolt.plotter import (preview, 
                             plot_elastic, 
                             plot_ECR, 
-                            plot_ICR, 
-                            plot_ICR_anim)
+                            plot_ICR,
+                            plot_convergence)

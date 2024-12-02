@@ -34,11 +34,11 @@ class BoltGroup:
         V_resultant (float):            - resultant applied shear force
         torsion (float):                - applied in-plane moment
         ecc (float):                    - eccentricity. Distance between CG and point of applied load
-        ecc_x (float):                  - Eccentricity x component
-        ecc_y (float):                  - Eccentricity y component
+        ecc_x (float):                  - eccentricity x component
+        ecc_y (float):                  - eccentricity y component
         bolt_capacity (float):          - bolt capacity
         bolt_demand (float):            - bolt demand (elastic method - superposition)
-
+        
         ecc_ECRx (float):               - eccentricity x component (ECR method)
         ecc_ECRy (float):               - eccentricity y component (ECR method)
         ecc_ECR (float):                - eccentricity. Distance between ECR and point of applied load
@@ -49,15 +49,16 @@ class BoltGroup:
         Ce (float):                     - connection capacity coefficient (ECR method)
         P_demand (float):               - connection demand = V_resultant
         P_capacity (float):             - connection capacity = bolt_capacity * Ce
-
+        
+        Note all ICR parameters are lists. Results are stored from every iteration.
         ecc_ICRx (list(float)):         - Eccentricity for ICR method along the x-axis.
         ecc_ICRy (list(float)):         - Eccentricity for ICR method along the y-axis.
         ecc_ICR (list(float)):          - Eccentricity for ICR method.
-        ICR_ax (list(float)):           - Axial force for ICR method.
-        ICR_ay (list(float)):           - Shear force for ICR method.
+        ICR_ax (list(float)):           - x direction increment from COG to ICR
+        ICR_ay (list(float)):           - y direction increment from COG to ICR
         ICR_x (list(float)):            - X-coordinate for ICR method.
         ICR_y (list(float)):            - Y-coordinate for ICR method.
-        Cu (list(float)):               - Eccentricity coefficient for ICR method.
+        Cu (list(float)):               - coefficient for ICR method.
         P_demand_ICR (float):           - Demand on axial force for ICR method.
         P_capacity_ICR (float):         - Capacity of axial force for ICR method.
         ICR_table (list(dataframe)):    - List containing ICR method table data.
@@ -191,7 +192,7 @@ class BoltGroup:
         for bolt in self.bolts:
             bolt.update_geometry(self.x_cg, self.y_cg)
     
-    def solve(self, Vx, Vy, torsion, bolt_capacity=17.9, verbose=True):
+    def solve(self, Vx, Vy, torsion, bolt_capacity=17.9, verbose=True, ecc_method="AISC"):
         """
         Public method called by user to solve for bolt forces using three methods:
             1. Elastic Method - Superposition
@@ -199,13 +200,38 @@ class BoltGroup:
             3. Instant Center of Rotation Method
             
         Args:
-            Vx ::float                          - applied horizontal force
-            Vy ::float                          - applied vertical force 
-            torsion ::float                     - applied in-plane torsion
-            (OPTIONAL) bolt_capacity ::float    - bolt capacity in kips. Default = 17.9 kips for A325-N 3/4"
-                
+            Vx                      float:: applied horizontal force
+            Vy                      float:: applied vertical force
+            torsion                 float:: applied in-plane moment (torsion)
+            bolt_capacity           float:: (OPTIONAL) bolt capacity in kips. Default = 17.9 kips for A325-N 3/4". This argument
+                                            is optional because Cu coefficient is actually independent of bolt capacity. The overall
+                                            connection capacity = Cu * bolt capacity.
+            verbose                 bool::  (OPTIONAL) whether or not to print out status messages. Default = True
+            ecc_method              str::   (OPTIONAL) method for calculating vertical eccentricity. "AISC" or "perpendicular". See more note below. 
+
         Return:
-            return_dict ::dict                  - a dictionary containing calculation results
+            return_dict             dict:: dictionary containing calculation results
+            
+        Notes on ecc_method:
+            ezbolt simplifies user input into three load vectors at the centroid of the bolt group (Vx, Vy, Mz), this convention is
+            more convenient for the elastic method. However, for the instant center of rotation method, the convention
+            is typically (P, ex, ey, degree). Ezbolt converts (Vx, Vy, and Mz) into the second convention internally. 
+            
+            However, the position of the applied load vector is ambiguous and can be anywhere on L = (Vy * ex - Vx * ey = torsion). 
+            Another constraint is needed to place P exactly on this line. Here, the user has two options:
+                - "AISC": assume ey = 0 which is consistent with the AISC steel manual Cu tables. 
+                - "perpendicular": calculate ex, ey such that the line P-COG is perpendicular to L
+                
+            The ecc_method argument is purely for graphical display purposes. Both options lead to the same result. I added the AISC option
+            so that the user can easily double-check the computed Cu with what's provided in the AISC steel construction manual.
+            
+            Consider the following set of forces (Vx=50, Vy=50, Mz=200), the user may be tempted to calculate the resultant eccentricity.
+                V_resultant = sqrt(50^2 + 50^2) = 70.7     -->    ecc = 200 / 70.7 = 2.83 in
+            
+            But AISC Cu values is tabulated based on ex:
+                Vy * ex - Vx * ey = torsion
+                (50) * ex - (50)* (0) = 200
+                ex = 200 / 50 = 4.0 in
         """
         # store user input
         self.Vx = Vx
@@ -219,15 +245,30 @@ class BoltGroup:
             raise RuntimeError("ERROR: No force applied!")
         self.theta = math.atan2(Vy, Vx) * 180 / math.pi
         
-        # ezbolt simplifies user input into three load vectors at the centroid of bolt group, namely Vx, Vy, Mz
-        # the (x,y) coordinate of applied load (let's call this point P) can reside anywhere along the line 
-        # defined by (Vx*ey + Vy*ex = Mz). Therefore, another constraint is added where we let line P-ICR be
-        # perpendicular to the applied load vector (i.e. theta + 90).
-        # Note that figures within ICR tables in AISC steel manual is misleading. It seems to imply no vertical 
-        # eccentricity (e_y = 0). Yet such an assumption will lead to slightly different ICR coefficients than what's tabulated
-        self.ecc = 0 if self.V_resultant==0 else -self.torsion / self.V_resultant
-        self.ecc_y = self.ecc * math.sin(math.radians(self.theta+90))
-        self.ecc_x = self.ecc * math.cos(math.radians(self.theta+90))
+        # calculate ex and ey
+        if self.V_resultant == 0:
+            self.ecc_x = 0
+            self.ecc_y = 0
+            
+        else:
+            if ecc_method == "AISC":
+                if Vy == 0:
+                    self.ecc_x = 0
+                    self.ecc_y = -(torsion) / Vx
+                else:
+                    self.ecc_x = (torsion) / Vy
+                    self.ecc_y = 0
+            elif ecc_method == "perpendicular":
+                self.ecc_y = (self.torsion / self.V_resultant) * -math.sin(math.radians(self.theta+90))
+                self.ecc_x = (self.torsion / self.V_resultant) * -math.cos(math.radians(self.theta+90))
+                
+            else:
+                # this is a test section. I wanted to see how Cu varies as I move along L(x). ecc_method is a float here
+                # conclusion: Cu is constant as long as P is along the line defined by Vy * ex - Vx * ey = torsion
+                self.ecc_y = ecc_method
+                self.ecc_x = (torsion + Vx * self.ecc_y) / Vy
+                
+        self.ecc = math.sqrt(self.ecc_x **2 + self.ecc_y **2)
         
         # solve with all three methods
         result_elastic = self.solve_elastic()
@@ -308,7 +349,7 @@ class BoltGroup:
             self.ecc_ECRx = self.ecc_x + self.ECR_ax
             self.ecc_ECRy = self.ecc_y - self.ECR_ay
             self.ecc_ECR = math.sqrt(self.ecc_ECRx**2 + self.ecc_ECRy**2)
-            
+
             # calculate bolt distance to ECR
             for bolt in self.bolts:
                 bolt.update_geometry_ECR(self.ECR_x, self.ECR_y)
@@ -316,20 +357,20 @@ class BoltGroup:
             # calculate elastic center of rotation coefficient
             dmax = max([b.ro_ECR for b in self.bolts])
             sumdsquared = sum([b.ro_ECR**2 for b in self.bolts])
+            
             if self.V_resultant == 0:
-                self.Ce = sumdsquared / (dmax)
+                Mp = 1 # unit torsion
             else:
-                self.Ce = sumdsquared / (self.ecc_ECR * dmax)
-
-            # calculate bolt force 
-            if self.V_resultant == 0:
-                K = 1 / sumdsquared * self.torsion
-            else:
-                if self.torsion < 0:
-                    K = - self.ecc_ECR / sumdsquared * self.V_resultant
-                elif self.torsion > 0:
-                    K = self.ecc_ECR / sumdsquared * self.V_resultant
+                Mp = -(self.Vx/self.V_resultant) * self.ecc_ECRy + (self.Vy/self.V_resultant) * self.ecc_ECRx 
                 
+            self.Ce = abs(sumdsquared / (Mp * dmax))
+
+            # calculate bolt force (multiplied by actual applied load to scale up from unit force)
+            if self.V_resultant == 0:
+                K = Mp / sumdsquared * self.torsion
+            else:
+                K = Mp / sumdsquared * self.V_resultant
+
             for bolt in self.bolts:
                 bolt.update_forces_ECR(K)
                 
@@ -342,13 +383,15 @@ class BoltGroup:
             result_dict["bolt_tag"] = [x.tag for x in self.bolts]
             result_dict["x"] = [b.x for b in self.bolts]
             result_dict["y"] = [b.y for b in self.bolts]
+            result_dict["dx"] = [x.dx for x in self.bolts]
+            result_dict["dy"] = [x.dy for x in self.bolts]
             result_dict["dx_ECR"] = [x.dx_ECR for x in self.bolts]
             result_dict["dy_ECR"] = [x.dy_ECR for x in self.bolts]
             result_dict["d_ECR"] = [x.ro_ECR for x in self.bolts]
             result_dict["vx"] = [x.vx_ECR for x in self.bolts]
             result_dict["vy"] = [x.vy_ECR for x in self.bolts]
             result_dict["v_resultant"] = [x.vtotal_ECR for x in self.bolts]
-            result_dict["moment_CG"] = [x.moment_ECG for x in self.bolts]
+            result_dict["moment"] = [x.moment_ECG for x in self.bolts]
             result_dict["moment_ECR"] = [x.moment_ECR for x in self.bolts]
             df = pd.DataFrame.from_dict(result_dict)
             sum_row = pd.DataFrame([""] * df.shape[1]).T
@@ -356,8 +399,7 @@ class BoltGroup:
             sum_row["bolt_tag"] = "Total"
             sum_row["vx"] = sum([x.vx_ECR for x in self.bolts])
             sum_row["vy"] = sum([x.vy_ECR for x in self.bolts])
-            sum_row["moment_CG"] = sum([x.moment_ECG for x in self.bolts])
-            sum_row["moment_ECR"] = sum([x.moment_ECR for x in self.bolts])
+            sum_row["moment"] = sum([x.moment_ECG for x in self.bolts])
             df = pd.concat([df, sum_row], ignore_index=True)
             df = df.set_index("bolt_tag")
             
@@ -390,6 +432,7 @@ class BoltGroup:
             fxx = []
             fyy = []
             residual = []
+            stepsize_factor = 1
             while True:
                 if N_iter == 0:
                     ax = self.Vy * self.Iz / self.torsion / self.N_bolt
@@ -399,10 +442,10 @@ class BoltGroup:
                     ICR_ex = self.ecc_x + ax
                     ICR_ey = self.ecc_y - ay
                 else:
-                    # I reduced ax, ay by a factor of 5 to ensure convergence with smaller step
                     # some configurations of load and bolts leads to infinite cycles and no convergence
-                    ax = fyy[-1] * self.Iz / self.torsion / self.N_bolt/2
-                    ay = fxx[-1] * self.Iz / self.torsion / self.N_bolt/2
+                    # I reduced ax, ay by a factor of at least 5 to ensure convergence with smaller step
+                    ax = fyy[-1] * self.Iz / self.torsion / self.N_bolt / stepsize_factor
+                    ay = fxx[-1] * self.Iz / self.torsion / self.N_bolt / stepsize_factor
                     ICR_x = self.ICR_x[-1] - ax
                     ICR_y = self.ICR_y[-1] + ay
                     ICR_ex = self.ecc_ICRx[-1] + ax
@@ -423,7 +466,8 @@ class BoltGroup:
                 # compute ICR coefficient at assumed ICR
                 ro_max = max([b.ro_ICR[-1] for b in self.bolts])
                 Mi1 = [b.get_moment_ICR(ro_max) for b in self.bolts]
-                Mp1 = math.sqrt(self.ecc_ICRx[-1]**2 + self.ecc_ICRy[-1]**2)
+                Mp1 = -(self.Vx/self.V_resultant) * self.ecc_ICRy[-1] + (self.Vy/self.V_resultant) * self.ecc_ICRx[-1]
+                
                 ICR_Cu = abs(sum(Mi1) / Mp1)
                 self.Cu.append(ICR_Cu)
                 
@@ -442,7 +486,12 @@ class BoltGroup:
                 fyy.append(sumFy + self.Vy)
                 residual.append(math.sqrt(fxx[-1]**2 + fyy[-1]**2))
                 if verbose:
-                    print("\t Trial {}: ({:.2f}, {:.2f}). fxx = {:.2f}, fyy = {:.2f}".format(N_iter+1, self.ICR_x[-1], self.ICR_y[-1], fxx[-1], fyy[-1]))
+                    print("\t Trial {}: ({:.2f}, {:.2f}). fxx = {:.2f}, fyy = {:.2f}, residual = {:.2f}".format(N_iter+1, 
+                                                                                                                self.ICR_x[-1], 
+                                                                                                                self.ICR_y[-1], 
+                                                                                                                fxx[-1], 
+                                                                                                                fyy[-1],
+                                                                                                                residual[-1]))
 
                 # tabulate bolt forces at each step
                 result_dict=dict()
@@ -469,7 +518,7 @@ class BoltGroup:
                 df = pd.concat([df, sum_row], ignore_index=True)
                 df = df.set_index("bolt_tag")
                 self.ICR_table.append(df)
-
+                
                 # end loop if equilibrium is obtained
                 if residual[-1] < tol:
                     if verbose:
@@ -478,19 +527,39 @@ class BoltGroup:
                     self.P_capacity_ICR = self.Cu[-1] * self.bolt_capacity
                     
                     return_dict = dict()
-                    return_dict["Bolt Force Tables"] = self.ICR_table
-                    return_dict["ICR"] = list(zip(self.ICR_x, self.ICR_y))
-                    return_dict["Cu"] = self.Cu
+                    return_dict["Bolt Force Table"] = self.ICR_table[-1]
+                    return_dict["ICR"] = (self.ICR_x[-1], self.ICR_y[-1])
+                    return_dict["Cu"] = self.Cu[-1]
                     return_dict["Connection Demand"] = self.P_demand_ICR
                     return_dict["Connection Capacity"] = self.P_capacity_ICR
                     return_dict["DCR"] = self.P_demand_ICR/self.P_capacity_ICR
+                    self.residual = residual
                     return return_dict
                 
                 # end loop if maximum number of iterations exceeded
                 N_iter +=1
                 if N_iter > max_iter:
+                    print("WARNING: COULD NOT CONVERGE") 
                     print(f"nbolt = {self.N_bolt}\nVx = {self.Vx}\nVy = {self.Vy}\nMz = {self.torsion}\n")
-                    raise RuntimeError("could not converge on ICR after 1000 iterations. Ending solver.")
+                    #raise RuntimeError("could not converge on ICR after 1000 iterations. Ending solver.")
+                    return_dict = dict()
+                    return_dict["Bolt Force Tables"] = self.ICR_table[-1]
+                    return_dict["ICR"] = (self.ICR_x[-1], self.ICR_y[-1])
+                    return_dict["Cu"] = "DID NOT CONVERGE"
+                    return_dict["Connection Demand"] = "DID NOT CONVERGE"
+                    return_dict["Connection Capacity"] = "DID NOT CONVERGE"
+                    return_dict["DCR"] = "DID NOT CONVERGE"
+                    self.residual = residual
+                    return return_dict
+                
+                # check every 250 iterations to see if stuck in local minimum, try with smaller step size.
+                if N_iter % 250 == 0:
+                    #is_stuck = len(residual) >= 10 and all(math.isclose(r, residual[-1], abs_tol=1e-3) for r in residual[-10:])
+                    if True:
+                        stepsize_factor = stepsize_factor * 2
+                        if verbose:
+                            print("Stuck at local minimum. Adjusting step size and trying again...")
+                            print(f"step factor = {stepsize_factor}")
          
                 
          
