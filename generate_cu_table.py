@@ -56,8 +56,8 @@ def compute_cu(args):
     width = (n_col-1) * col_spacing
     height = (n_row-1) * row_spacing
     
-    Vx = -math.sin(degree * math.pi / 180) * 100
-    Vy = -math.cos(degree * math.pi / 180) * 100
+    Vx = -math.sin(degree * math.pi / 180)
+    Vy = -math.cos(degree * math.pi / 180)
     torsion = Vy * ecc
     
     # create bolt group and calculate Cu

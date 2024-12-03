@@ -432,7 +432,20 @@ class BoltGroup:
             fxx = []
             fyy = []
             residual = []
-            stepsize_factor = 1
+            
+            # step size (ax) is a very important for convergence. In general,
+            # small eccentricity -> ICR might be far away in which case you want to take large steps
+            # large eccentricity -> if step is too large, may result in infinite cycles and no convergence.
+            # but sometimes it just doesn't want to converge. Need to adaptively change for most optimal convergence.
+            if self.ecc < 1:
+                stepsize_factor = 0.5
+            elif self.ecc < 5:
+                stepsize_factor = 1
+            elif self.ecc < 10:
+                stepsize_factor = 2
+            else:
+                stepsize_factor = 5
+
             while True:
                 if N_iter == 0:
                     ax = self.Vy * self.Iz / self.torsion / self.N_bolt
@@ -552,10 +565,10 @@ class BoltGroup:
                     self.residual = residual
                     return return_dict
                 
-                # check every 250 iterations to see if stuck in local minimum, try with smaller step size.
-                if N_iter % 250 == 0:
-                    #is_stuck = len(residual) >= 10 and all(math.isclose(r, residual[-1], abs_tol=1e-3) for r in residual[-10:])
-                    if True:
+                # after 200 iterations, if still not converged, try with smaller step size.
+                if N_iter % 200 == 0:
+                    is_stuck = len(residual) >= 10 and all(math.isclose(r, residual[-1], abs_tol=1e-3) for r in residual[-10:])
+                    if is_stuck:
                         stepsize_factor = stepsize_factor * 2
                         if verbose:
                             print("Stuck at local minimum. Adjusting step size and trying again...")
