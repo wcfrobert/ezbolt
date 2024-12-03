@@ -29,8 +29,38 @@ Calculate bolt forces with Elastic Method and Instant Center of Rotation (ICR) m
 
 EZbolt is a Python program that calculates bolt forces in a bolt group subject to shear and in-plane torsion. It does so using both the Elastic Method and the Instant Center of Rotation (ICR) method as outlined in the AISC steel construction manual. The iterative algorithm for locating the center of rotation is explained in this paper by Donald Brandt: [Rapid Determination of Ultimate Strength of Eccentrically Loaded Bolt Groups.](https://www.aisc.org/Rapid-Determination-of-Ultimate-Strength-of-Eccentrically-Loaded-Bolt-Groups). Unlike the ICR coefficient tables in the steel construction manual which is provided in 15 degree increments, EZbolt can handle **any bolt arrangements, any load orientation, and any eccentricity**.
 
+> [!NOTE]
+>
+> This package is meant for <u>personal and educational use only</u>.
 
-**Disclaimer:** this package is meant for <u>personal and educational use only</u>.
+
+
+## Tabulated Cu Coefficients
+
+For engineers not as familiar with python, I've pre-computed over 90,000 common bolt configurations and tabulated the results for easy lookup. You will find the relevant files in the `Cu Coefficient Table` folder. Need to find some Cu coefficient? Just copy the coefficient table and do some VLOOKUP in Excel. No solvers needed!
+
+* `Cu Coefficient.csv`
+  * **columns**: column of bolts 
+  * **rows**: row of bolts 
+  * **eccentricity**: load eccentricity (ex = Mz / Vy) 
+  * **degree**:  load orientation (0 degrees is vertical downward) 
+  * **Ce**: elastic center of rotation coefficient
+  * **Cu**: (plastic) instant center of rotation coefficient
+* `Cu Coefficient.json`
+  * This is a nested dictionary for engineers more comfortable with python. Dictionary lookup is pretty much instant whereas solving a bolt configuration may take ~ 100 ms depending on your computer. 
+  * The key order is as follows: `...[N_columns][N_rows][eccentricity][degree]`["Cu" or "Ce"]. All keys are integers.
+  * For example, `...[1][6][6][0]["Cu"]` returns the Cu for a single column of bolt with 6 rows, vertical force with 6" eccentricity. The returned Cu is 3.55 which matches the AISC tables.
+
+If you would like to generate your own table, try running `generate_cu_table.py`. You can specify the range for each parameter. Be careful though, the number of configurations increase exponentially. Also there's tricky convergence issues if e<0.5 and degree > 80. The cached coefficients have the following range:
+
+* **columns**: 1 to 3
+* **rows**: 2 to 12
+* **eccentricity**: 1 to 36
+* **degree**: 0 to 75
+
+That's 3 * 11 * 76 * 36 = 90,288 iterations. On my Linux desktop with an Intel i7-11700, each iteration took ~ 50 ms. A serial run would take ~75 minutes. Luckily, I was able to implement some nifty parallel processing to bring that the run time to ~5 minutes (running 16 threads).
+
+
 
 
 ## Quick Start
@@ -41,7 +71,7 @@ Run main.py:
 import ezbolt
 
 # initialize a bolt group
-bolt_group = ezbolt.boltgroup.BoltGroup()
+bolt_group = ezbolt.BoltGroup()
 
 # add a 3x3 bolt group with 6" width and 6" depth with lower left corner located at (0,0)
 bolt_group.add_bolts(xo=0, yo=0, width=6, height=6, nx=3, ny=3)
@@ -49,35 +79,36 @@ bolt_group.add_bolts(xo=0, yo=0, width=6, height=6, nx=3, ny=3)
 # preview geometry
 ezbolt.plotter.preview(bolt_group)
 
-# calculate bolt forces
-results = bolt_group.solve(Vx=50, Vy=50, torsion=200)
+# calculate bolt demands under 50 kips horizontal shear, 50 kips vertical shear, and 200 k.in torsion
+results = bolt_group.solve(Vx=50, Vy=50, torsion=200, bolt_capacity=17.9)
 
 # plot bolt forces
-ezbolt.plotter.plot_elastic(bolt_group)
-ezbolt.plotter.plot_ECR(bolt_group)
-ezbolt.plotter.plot_ICR(bolt_group)
+ezbolt.plot_elastic(bolt_group)
+ezbolt.plot_ECR(bolt_group)
+ezbolt.plot_ICR(bolt_group)
 
+# look at the bolt force tables
+df1 = results["Elastic Method - Superposition"]["Bolt Force Table"]
+df2 = results["Elastic Method - Center of Rotation"]["Bolt Force Table"]
+df3 = results["Instant Center of Rotation Method"]["Bolt Force Table"]
 ```
 
-`plotter.preview()` plots a bolt group preview:
+`ezbolt.preview()` plots a bolt group preview:
 
 <div align="center">
   <img src="https://github.com/wcfrobert/ezbolt/blob/master/doc/preview.png?raw=true" alt="demo" style="width: 50%;" />
 </div>
-
-`plotter.plot_elastic()` shows bolt force calculated from elastic method.
+`ezbolt.plot_elastic()` shows bolt force calculated from elastic method.
 
 <div align="center">
   <img src="https://github.com/wcfrobert/ezbolt/blob/master/doc/elasticmethod.png?raw=true" alt="demo" style="width: 50%;" />
 </div>
-
-`plotter.plot_ECR()` shows bolt forces calculated from elastic center of rotation (ECR) method.
+`ezbolt.plot_ECR()` shows bolt forces calculated from elastic center of rotation (ECR) method.
 
 <div align="center">
   <img src="https://github.com/wcfrobert/ezbolt/blob/master/doc/ECRmethod.png?raw=true" alt="demo" style="width: 50%;" />
 </div>
-
-`plotter.plot_ICR()` shows bolt forces calculated from instant center of rotation (ICR) method.
+`ezbolt.plot_ICR()` shows bolt forces calculated from instant center of rotation (ICR) method.
 
 <div align="center">
   <img src="https://github.com/wcfrobert/ezbolt/blob/master/doc/ICRmethod.png?raw=true" alt="demo" style="width: 50%;" />
@@ -102,7 +133,7 @@ ezbolt.plotter.plot_ICR(bolt_group)
     * `... ["Cu"]`
     * `... ["Connection Capacity"]`
     * `... ["Connection Demand"]`
-    * `... ["Bolt Force Tables"]`
+    * `... ["Bolt Force Table"]`
     * `... ["DCR"]`
 
 
@@ -110,7 +141,7 @@ ezbolt.plotter.plot_ICR(bolt_group)
 
 **Option 1: Anaconda Python**
 
-Simply run main.py using your Anaconda base environment. The following packages are used:
+Simply run main.py using the default Anaconda base environment. The following packages are required:
 
 * Numpy
 * Matplotlib
@@ -122,8 +153,7 @@ Installation procedure:
 2. Download this package (click the green "Code" button and download zip file)
 3. Open and run "main.py" in Anaconda's Spyder IDE.
 
-
-**Option 2: Vanilla Python**
+**Option 2: Standalone Python**
 
 1. Download this project to a folder of your choosing
     ```
@@ -149,7 +179,7 @@ Installation procedure:
     ```
     py main.py
     ```
-Pip install is available:
+    Pip install is available:
 
 ```
 pip install ezbolt
@@ -166,16 +196,20 @@ Here are all the public methods available to the user:
 
 **Solving**
 
-* `ezbolt.BoltGroup.solve(Vx, Vy, torsion, bolt_capacity=17.9)`
+* `ezbolt.BoltGroup.solve(Vx, Vy, torsion, bolt_capacity=17.9, verbose=True, ecc_method="AISC")`
 
 **Visualizations**
 
-* `ezbolt.plotter.preview(boltgroup_object)`
-* `ezbolt.plotter.plot_elastic(boltgroup_object)`
-* `ezbolt.plotter.plot_ECR(boltgroup_object)`
-* `ezbolt.plotter.plot_ICR(boltgroup_object)`
+* `ezbolt.preview(boltgroup_object)`
+* `ezbolt.plot_elastic(boltgroup_object, annotate_force=True)`
+* `ezbolt.plot_ECR(boltgroup_object, annotate_force=True)`
+* `ezbolt.plot_ICR(boltgroup_object, annotate_force=True)`
 
-For further guidance and documentation, you can access the docstring of any method using the help() command. (e.g. `help(ezbolt.boltgroup.BoltGroup.add_bolts)`)
+For further guidance and documentation, you can access the docstring of any method using the help() command. For example, here is the output for `help(ezbolt.BoltGroup.solve)`
+
+<div align="center">
+  <img src="https://github.com/wcfrobert/ezbolt/blob/master/doc/help.png?raw=true" alt="demo" style="width: 50%;" />
+</div>
 
 
 ## Theoretical Background - Elastic Method
@@ -338,7 +372,7 @@ When the load orientation is completely horizontal or vertical, the ICR location
 4. Compute ICR coefficient "C" at assumed location.
 
     $$C = \frac{ \sum((1 - e^{-10 \Delta_i})^{0.55} d_i)}{r_o}$$
-            
+    
 5. Next, we need to determine the maximum bolt force ($R_{max}$) at the user-specified load magnitude. This can be done through the moment equilibrium equation; hence why we only need to check force equilibrium at the end. Moment equilibrium is established as a matter of course by enforcing a specific value of $R_{max}$
 
     $$M_p = P_x r_{oy} - P_y  r_{ox}$$

@@ -1,5 +1,4 @@
 import ezbolt
-import matplotlib.pyplot as plt
 
 # initialize bolt group
 bolt_group = ezbolt.BoltGroup()
@@ -17,7 +16,6 @@ results = bolt_group.solve(Vx=0, Vy=-50, torsion=-100, bolt_capacity=17.9)
 ezbolt.plot_elastic(bolt_group)
 ezbolt.plot_ECR(bolt_group)
 ezbolt.plot_ICR(bolt_group)
-plt.show()
 
 # look at the bolt force tables
 df1 = results["Elastic Method - Superposition"]["Bolt Force Table"]
