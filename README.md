@@ -15,6 +15,7 @@ Calculate bolt forces with Elastic Method and Instant Center of Rotation (ICR) m
 
 
 - [Introduction](#introduction)
+- [Tabulated Cu Coefficients](#tabulated-cu-coefficients)
 - [Quick Start](#quick-start)
 - [Installation](#installation)
 - [Usage](#usage)
@@ -25,19 +26,17 @@ Calculate bolt forces with Elastic Method and Instant Center of Rotation (ICR) m
 - [License](#license)
 
 
+
+
 ## Introduction
 
 EZbolt is a Python program that calculates bolt forces in a bolt group subject to shear and in-plane torsion. It does so using both the Elastic Method and the Instant Center of Rotation (ICR) method as outlined in the AISC steel construction manual. The iterative algorithm for locating the center of rotation is explained in this paper by Donald Brandt: [Rapid Determination of Ultimate Strength of Eccentrically Loaded Bolt Groups.](https://www.aisc.org/Rapid-Determination-of-Ultimate-Strength-of-Eccentrically-Loaded-Bolt-Groups). Unlike the ICR coefficient tables in the steel construction manual which is provided in 15 degree increments, EZbolt can handle **any bolt arrangements, any load orientation, and any eccentricity**.
-
-> [!NOTE]
->
-> This package is meant for <u>personal and educational use only</u>.
 
 
 
 ## Tabulated Cu Coefficients
 
-For engineers not as familiar with python, I've pre-computed over 90,000 common bolt configurations and tabulated the results for easy lookup. You will find the relevant files in the `Cu Coefficient Table` folder. Need to find some Cu coefficient? Just copy the coefficient table and do some VLOOKUP in Excel. No solvers needed!
+Don't have python experience? No worries. I've pre-computed 90,000 common bolt configurations and tabulated the results. Need to find some Cu coefficient? Just copy the Cu coefficient csv into your spreadsheet and do some VLOOKUP in Excel. No solvers needed!
 
 * `Cu Coefficient.csv`
   * **columns**: column of bolts 
@@ -208,8 +207,9 @@ Here are all the public methods available to the user:
 For further guidance and documentation, you can access the docstring of any method using the help() command. For example, here is the output for `help(ezbolt.BoltGroup.solve)`
 
 <div align="center">
-  <img src="https://github.com/wcfrobert/ezbolt/blob/master/doc/help.png?raw=true" alt="demo" style="width: 50%;" />
+  <img src="https://github.com/wcfrobert/ezbolt/blob/master/doc/help.png?raw=true" alt="demo" style="width: 90%;" />
 </div>
+
 
 
 ## Theoretical Background - Elastic Method
@@ -239,7 +239,7 @@ $$v_{dx} = \frac{V_x}{N_{bolts}}$$
 $$v_{dy} = \frac{V_y}{N_{bolts}}$$
 
 
-In-plane torsion on the bolt group is converted to shear on the individual anchors. Let's call this **torsional shear**.
+In-plane torsion on the bolt group is converted to shear on the individual anchors. Let's call this **torsional shear**. The equations below should be very familiar to most engineers. They're identical to the torsion shear stress equations for beam sections ($$\tau = Tc/J$$). Essentially, bolt force varies linearly radiating from the centroid. Bolts furthest away from the centroid naturally take more force.
 
 $$v_{tx} = \frac{M_z (y_i - y_{cg})}{I_z}$$
 
@@ -277,6 +277,16 @@ $$\sum M = 0 = M_z -\sum m_i$$
 <div align="center">
   <img src="https://github.com/wcfrobert/ezbolt/blob/master/doc/aisc2.31.png?raw=true" alt="demo" style="width: 60%;" />
 </div>
+Compared to the elastic method, the ICR method differs in three key ways:
+
+* Rather than looking at DCR on the individual bolt level, ICR method provides an overall connection capacity. First, the **applied load (Vx, Vy, Mz) is converted into an equivalent eccentricity and load orientation**, then a coefficient (C) is determined which is then multiplied by the bolt capacity to get the overall connection capacity.
+
+$$(V_x,V_y,M_z) \rightarrow (P, e_x,\theta)$$
+
+$$\mbox{connection capacity} = C \times \mbox{bolt capacity}$$
+
+* ICR method is more accurate and less conservative because it allows for **plastic deformation of bolts**. An appropriate analogy would be how the plastic section modulus (Zx) is larger than elastic section modulus (Sx). Technically, the elastic method also has a center about which bolt force vectors revolve. But because everything is linear, we can skip the force-deformation relationship and calculate forces from geometric properties like moment of inertia and polar moment of inertia.
+* Unlike the elastic method, **ICR method is not practical to do by hand** as the location of ICR must be determined iteratively. There are design tables available in the steel construction manual. Generally the ICR method is more of a black-box.
 
 The derivations will follow AISC notations which is somewhat different from the notations above. Most notably, we will use **P** to denote applied force instead of **V**, and **R** to denote in-plane bolt force instead of **v**.
 
@@ -312,7 +322,7 @@ $$ P \times r_o = R_{max} \times \sum (1-e^{-10\Delta_i})^{0.55} d_i$$
 
 $$ P = R_{max} \times \frac{\sum (1-e^{-10\Delta_i})^{0.55} d_i}{r_o}$$
 
-Let the second term be the ICR coefficient C. You can think of C as simply a ratio between maximum bolt force and applied force
+Let the second term be the ICR coefficient C. **You can think of C as simply a ratio of applied force over max bolt force **
 
 $$ P = R_{max} \times C$$
 
@@ -336,7 +346,53 @@ $$ C = \frac{\sum (1-e^{-10\Delta_i})^{0.55} d_i}{0.9815 r_o}$$
 
 ## Theoretical Background - Brandt's Method for Locating ICR
 
-When the load orientation is completely horizontal or vertical, the ICR location reside on a line connecting CoG and ICR (this covers most cases). However, when the load orientation isn't 0 or 90 degrees, the search space for ICR is two dimensional and implementation becomes much more challenging. Rather than searching the 2-D plane using brute force or some generic optimization strategy, there exists an iterative method that converges on ICR very quickly. **Brandt's method** is fast and efficient, and it is what AISC uses to construct their design tables.
+The derivation above is dependent on that fact we know where ICR is. But we don't, and it is not a trivial task to find it. The [original Crawford and Kulak paper (1971)](https://ascelibrary.org/doi/10.1061/JSDEAG.0002844) is somewhat misleading. The search space for ICR is very rarely a one-dimensional line except in the very specific situation where load angle is 0 degrees. In other words, you cannot draw an orthogonal line from P to CoG, extend that line, and expect to find ICR somewhere along it.As explained by [Muir and Thornton (2004)](https://www.cives.com/cives-engineering-corporation-publications), the search space for ICR is almost always two-dimensional.
+
+Luckily for us, there exists an iterative method that converges on ICR very quickly. [Brandt's method (1982)](https://www.aisc.org/Rapid-Determination-of-Ultimate-Strength-of-Eccentrically-Loaded-Bolt-Groups) is fast and efficient, and it is what AISC uses to construct their design tables. We will implement Brandt's method here. The two key insights presented by Brandt is summarized below:
+
+**Insight #1: Elastic method also has a center of rotation and can be readily calculated**
+
+Let $$(x_{cg}, y_{cg})$$ be the coordinate of bolt group centroid, the coordinate for the elastic center of rotation (ECR) is $$(x_{cg} +a_x,  y_{cg}+a_y)$$:
+
+$$a_x = -\frac{P_y}{n} \frac{J}{M_z}$$
+
+$$a_y = \frac{P_x}{n} \frac{J}{M_z}$$
+
+Where:
+
+* $$P_x$$ = x component of applied load
+* $$P_y$$= y component of applied load
+* $$n$$ = number of bolts in bolt group
+* $$J$$ = polar moment of inertia ($$I_z$$)
+* $$M_z$$ = applied torsion
+
+**Insight #2: Elastic center of rotation (ECR) can be used as the initial guess of (ICR), subsequent improvements can be achieved as follows:**
+
+Let the initial guess be the ECR:
+
+$$x_0 = x_{cg} +a_x$$
+
+$$y_0 = y_{cg} + a_y$$
+
+At this assumed ICR location, calculate force equilibrium. Note the moment equilibrium will be enforced when we determine $$R_{max}$$ at each step (this will become evident when we go through the step-by-step procedures)
+
+$$\sum F_x = f_{xx} = P_x - \sum R_{x}$$
+
+$$\sum F_y = f_{yy} = P_y - \sum R_{y}$$
+
+The force summations will not be zero unless we are at the ICR, use the residual to determine successive guesses:
+
+$$x_{i+1} = x_i - \frac{f_{yy}J}{nM_z}$$
+
+$$y_{i+1} = y_i + \frac{f_{xx}J}{nM_z}$$
+
+Repeat until the desired tolerance is achieved:
+
+$$\mbox{residual} = \sqrt{(f_{xx})^2 + (f_{yy})^2} < tol$$
+
+
+
+Here is the step by step procedure:
 
 
 1. From applied force $(P_x, P_y, M_z)$, calculate load vector orientation ($\theta$). Note [atan2](https://en.wikipedia.org/wiki/Atan2) is a specialized arctan function that returns within the range between -180 to 180 degrees, rather than -90 to 90 degrees. This is to obtain a correct and unambiguous value for the angle theta.
@@ -345,7 +401,7 @@ When the load orientation is completely horizontal or vertical, the ICR location
 
     $$\theta = atan2(\frac{P_y}{P_x})$$
 
-2. Now calculate eccentricity and its x and y components. We can use $e_x$ and $e_y$ to locate the point of applied load (let's call this point P). We know the line P-ICR is perpendicular to the load vector orientation, hence $\theta+90^o$. Note that figures within ICR tables in AISC steel manual is misleading. It seems to imply no vertical eccentricity ($e_y = 0$), yet such an assumption would make the load vector non-orthogonal to the ICR.
+2. Now calculate eccentricity and its x and y components. We can use $e_x$ and $e_y$ to locate the point of applied load (let's call this point P). 
 
     $$e = \frac{M_z}{P}$$
 
