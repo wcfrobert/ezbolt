@@ -15,7 +15,6 @@ Calculate bolt forces with Elastic Method and Instant Center of Rotation (ICR) m
 
 
 - [Introduction](#introduction)
-- [Tabulated Cu Coefficients](#tabulated-cu-coefficients)
 - [Quick Start](#quick-start)
 - [Installation](#installation)
 - [Usage](#usage)
@@ -32,11 +31,13 @@ Calculate bolt forces with Elastic Method and Instant Center of Rotation (ICR) m
 
 EZbolt is a Python program that calculates bolt forces in a bolt group subject to shear and in-plane torsion. It does so using both the Elastic Method and the Instant Center of Rotation (ICR) method as outlined in the AISC steel construction manual. The iterative algorithm for locating the center of rotation is explained in this paper by Donald Brandt: [Rapid Determination of Ultimate Strength of Eccentrically Loaded Bolt Groups.](https://www.aisc.org/Rapid-Determination-of-Ultimate-Strength-of-Eccentrically-Loaded-Bolt-Groups). Unlike the ICR coefficient tables in the steel construction manual which is provided in 15 degree increments, EZbolt can handle **any bolt arrangements, any load orientation, and any eccentricity**.
 
+> [!TIP]
+>
+> Don't have python experience? Worry not, you will find a .csv file in the `Cu Coefficient Table` folder. 90,000 common bolt configurations have been pre-computed and tabulated. Need to find some Cu coefficient for your connection design? Just copy the csv into your spreadsheet and do some VLOOKUP. No solvers needed!
 
 
-## Tabulated Cu Coefficients
 
-Don't have python experience? No worries. I've pre-computed 90,000 common bolt configurations and tabulated the results. Need to find some Cu coefficient? Just copy the Cu coefficient csv into your spreadsheet and do some VLOOKUP in Excel. No solvers needed!
+### Tabulated Cu Coefficients Table
 
 * `Cu Coefficient.csv`
   * **columns**: column of bolts 
@@ -277,18 +278,20 @@ $$\sum M = 0 = M_z -\sum m_i$$
 <div align="center">
   <img src="https://github.com/wcfrobert/ezbolt/blob/master/doc/aisc2.31.png?raw=true" alt="demo" style="width: 60%;" />
 </div>
-Compared to the elastic method, the ICR method differs in three key ways:
+Compared to the elastic method, the ICR method differs in four key ways:
 
-* Rather than looking at DCR on the individual bolt level, ICR method provides an overall connection capacity. First, the **applied load (Vx, Vy, Mz) is converted into an equivalent eccentricity and load orientation**, then a coefficient (C) is determined which is then multiplied by the bolt capacity to get the overall connection capacity.
+* The **applied load vectors (Vx, Vy, Mz) is converted into an equivalent eccentricity and load orientation** 
 
 $$(V_x,V_y,M_z) \rightarrow (P, e_x,\theta)$$
+
+* Rather than looking at DCR on the individual bolt level, ICR method provides an overall connection capacity. A coefficient (C) is determined, and we can convert bolt capacity to the overall connection capacity as follows.
 
 $$\mbox{connection capacity} = C \times \mbox{bolt capacity}$$
 
 * ICR method is more accurate and less conservative because it allows for **plastic deformation of bolts**. An appropriate analogy would be how the plastic section modulus (Zx) is larger than elastic section modulus (Sx). Technically, the elastic method also has a center about which bolt force vectors revolve. But because everything is linear, we can skip the force-deformation relationship and calculate forces from geometric properties like moment of inertia and polar moment of inertia.
 * Unlike the elastic method, **ICR method is not practical to do by hand** as the location of ICR must be determined iteratively. There are design tables available in the steel construction manual. Generally the ICR method is more of a black-box.
 
-The derivations will follow AISC notations which is somewhat different from the notations above. Most notably, we will use **P** to denote applied force instead of **V**, and **R** to denote in-plane bolt force instead of **v**.
+The derivations will follow AISC notations which is somewhat different from what I've used above. Most notably, we will use **P** to denote applied force instead of **V**, and **R** to denote in-plane bolt force instead of **v**.
 
 Suppose we know the exact location of ICR, first let's calculate the applied moment with respect to this new center.
 
@@ -312,7 +315,7 @@ $$M_i = R_{max} (1-e^{-10\Delta_i})^{0.55} \times d_i$$
 
 $$\sum M_i = R_{max} \times \sum (1-e^{-10\Delta_i})^{0.55} d_i$$
 
-Apply moment equilibrium and rearrange for P:
+The applied moment, and the reactive moment are in equilibrium. Rearrange for P:
 
 $$ M_{applied} = M_{resisting}$$
 
@@ -322,7 +325,7 @@ $$ P \times r_o = R_{max} \times \sum (1-e^{-10\Delta_i})^{0.55} d_i$$
 
 $$ P = R_{max} \times \frac{\sum (1-e^{-10\Delta_i})^{0.55} d_i}{r_o}$$
 
-Let the second term be the ICR coefficient C. **You can think of C as simply a ratio of applied force over max bolt force **
+Let the second term be the ICR coefficient C. **You can think of C as a constant that converts an applied load (P) to the maximum bolt demand**
 
 $$ P = R_{max} \times C$$
 
@@ -337,7 +340,7 @@ $$ P_{capacity} = R_{capacity} \times C$$
 Notes:
 
 1. Despite a nonlinear bolt force-deformation, the relationship between max bolt force ($R_{max}$) and applied force ($P$) is linear. In other words, if applied force doubles, so does maximum bolt force, and vice versa. Embedded in this is the **assumption that eccentricity (e = Mz / P) will remain constant**      
-2. If we substitute 0.34 into the exponential function above, we get 0.9815 as there's a horizontal asymptote and we will never reach 1.0 exactly. We can make a simple adjustment to our "C" equation if we desire. Note that AISC does NOT make this adjustment as it is more conservative to set max bolt-force as $0.9815R_{max}$, effectively capping our DCR to 98%.
+2. If we substitute 0.34 into the exponential function above, we get 0.9815 as there's a horizontal asymptote and we will never reach 1.0 exactly. We can make a simple adjustment to our "C" equation if we desire. Note that AISC does NOT make this adjustment as it is more conservative to set max bolt-force as $0.9815R_{max}$, effectively capping our utilization ratio to 98%.
 
 $$ (1 - e^{-10(0.34)} )^{0.55} = 0.9815 $$
 
@@ -346,7 +349,7 @@ $$ C = \frac{\sum (1-e^{-10\Delta_i})^{0.55} d_i}{0.9815 r_o}$$
 
 ## Theoretical Background - Brandt's Method for Locating ICR
 
-The derivation above is dependent on that fact we know where ICR is. But we don't, and it is not a trivial task to find it. The [original Crawford and Kulak paper (1971)](https://ascelibrary.org/doi/10.1061/JSDEAG.0002844) is somewhat misleading. The search space for ICR is very rarely a one-dimensional line except in the very specific situation where load angle is 0 degrees. In other words, you cannot draw an orthogonal line from P to CoG, extend that line, and expect to find ICR somewhere along it.As explained by [Muir and Thornton (2004)](https://www.cives.com/cives-engineering-corporation-publications), the search space for ICR is almost always two-dimensional.
+The derivation above assumes we know where ICR is. But we don't, and it is not a trivial task to find it. The [original Crawford and Kulak paper (1971)](https://ascelibrary.org/doi/10.1061/JSDEAG.0002844) is somewhat misleading. The search space for ICR is very rarely a one-dimensional line except in the very specific situation where load angle is 0 degrees. In other words, you cannot draw an orthogonal line from P to CoG, extend that line, and expect to find ICR somewhere along it. This is explained in detail by [Muir and Thornton (2004)](https://www.cives.com/cives-engineering-corporation-publications); the search space for ICR is almost always two-dimensional.
 
 Luckily for us, there exists an iterative method that converges on ICR very quickly. [Brandt's method (1982)](https://www.aisc.org/Rapid-Determination-of-Ultimate-Strength-of-Eccentrically-Loaded-Bolt-Groups) is fast and efficient, and it is what AISC uses to construct their design tables. We will implement Brandt's method here. The two key insights presented by Brandt is summarized below:
 
@@ -354,7 +357,7 @@ Luckily for us, there exists an iterative method that converges on ICR very quic
 
 Let $$(x_{cg}, y_{cg})$$ be the coordinate of bolt group centroid, the coordinate for the elastic center of rotation (ECR) is $$(x_{cg} +a_x,  y_{cg}+a_y)$$:
 
-$$a_x = -\frac{P_y}{n} \frac{J}{M_z}$$
+$$a_x = \frac{P_y}{n} \frac{J}{M_z}$$
 
 $$a_y = \frac{P_x}{n} \frac{J}{M_z}$$
 
@@ -374,7 +377,7 @@ $$x_0 = x_{cg} +a_x$$
 
 $$y_0 = y_{cg} + a_y$$
 
-At this assumed ICR location, calculate force equilibrium. Note the moment equilibrium will be enforced when we determine $$R_{max}$$ at each step (this will become evident when we go through the step-by-step procedures)
+At this assumed ICR location, calculate force equilibrium. Note how moment equilibrium is enforced when we determine $$R_{max}$$ at each step.
 
 $$\sum F_x = f_{xx} = P_x - \sum R_{x}$$
 
@@ -395,85 +398,89 @@ $$\mbox{residual} = \sqrt{(f_{xx})^2 + (f_{yy})^2} < tol$$
 Here is the step by step procedure:
 
 
-1. From applied force $(P_x, P_y, M_z)$, calculate load vector orientation ($\theta$). Note [atan2](https://en.wikipedia.org/wiki/Atan2) is a specialized arctan function that returns within the range between -180 to 180 degrees, rather than -90 to 90 degrees. This is to obtain a correct and unambiguous value for the angle theta.
+* **Step 1**: From applied force $(P_x, P_y, M_z)$, calculate load vector orientation ($\theta$). Note [atan2](https://en.wikipedia.org/wiki/Atan2) is a specialized arctan function that returns within the range between -180 to 180 degrees, rather than -90 to 90 degrees. This is to obtain a correct and unambiguous value for the angle theta.
 
-    $$P = \sqrt{P_x^2 + P_y^2}$$
+$$P = \sqrt{P_x^2 + P_y^2}$$
 
-    $$\theta = atan2(\frac{P_y}{P_x})$$
+$$\theta = atan2(\frac{P_y}{P_x})$$
 
-2. Now calculate eccentricity and its x and y components. We can use $e_x$ and $e_y$ to locate the point of applied load (let's call this point P). 
+* **Step 2**: Now calculate eccentricity and its x and y components. $e_x$ and $e_y$ is used to locate the point of applied load (let's call this point P). The location of P is actually ambiguous and can be anywhere along $L(x) = P_ye_x - P_xe_y$. One method is to place P such that the line P-CoG is perpendicular to L(x). Another alternative is to assume $e_y=0$ which is what AISC assumes and what we will do by default. Note both methods lead to the same result as long as P is oriented along L(x). You can change which assumption is used by ezbolt by changing the `ecc_method` argument in `ezbolt.BoltGroup.solve()`
 
-    $$e = \frac{M_z}{P}$$
+$$e_y = 0$$
 
-    $$e_x = - e \times cos(\theta + 90^o)$$
+$$e_x = M_z/P_y$$
 
-    $$e_y = - e \times sin(\theta + 90^o)$$
+$$e = \sqrt{e_x^2 + e_y^2}$$
 
-3. Obtain an initial guess of ICR location per Brandt's method, then calculate distance of line P-ICR ($r_o$)
+* **Step 3**: Obtain an initial guess of ICR location per Brandt's method, then calculate distance of line P-ICR ($r_o$)
 
-    $$a_x = V_y \times \frac{I_z}{M_z N_{bolt}}$$
+$$a_x = P_y \times \frac{I_z}{M_z N_{bolt}}$$
 
-    $$a_y = V_x \times \frac{I_z}{M_z N_{bolt}}$$
+$$a_y = P_x \times \frac{I_z}{M_z N_{bolt}}$$
 
-    $$x_{ICR} = x_{cg} - a_x$$
+$$x_{ICR} = x_{cg} - a_x$$
 
-    $$y_{ICR} = y_{cg} + a_y$$
+$$y_{ICR} = y_{cg} + a_y$$
 
-    $$r_{ox} = e_x + a_x$$
+$$r_{ox} = e_x + a_x$$
 
-    $$r_{oy} = e_y - a_y$$
+$$r_{oy} = e_y - a_y$$
 
-    $$r_{o} = \sqrt{r_{ox}^2 + r_{oy}^2}$$
+$$r_{o} = \sqrt{r_{ox}^2 + r_{oy}^2}$$
 
-4. Compute ICR coefficient "C" at assumed location.
+* **Step 4**: At this point, we can already compute coefficient "C" at our assumed ICR location.
 
-    $$C = \frac{ \sum((1 - e^{-10 \Delta_i})^{0.55} d_i)}{r_o}$$
+$$C = \frac{ \sum((1 - e^{-10 \Delta_i})^{0.55} d_i)}{r_o}$$
     
-5. Next, we need to determine the maximum bolt force ($R_{max}$) at the user-specified load magnitude. This can be done through the moment equilibrium equation; hence why we only need to check force equilibrium at the end. Moment equilibrium is established as a matter of course by enforcing a specific value of $R_{max}$
+* **Step 5**: Next, we need to determine the maximum bolt force ($R_{max}$) at the user-specified load magnitude. This can be done by using the moment equilibrium equation; hence why we only need to check force equilibrium at the end. Moment equilibrium is established as a matter of course by enforcing a specific value of $R_{max}$
 
-    $$M_p = P_x r_{oy} - P_y  r_{ox}$$
+$$M_p = P_x r_{oy} - P_y  r_{ox}$$
 
-    $$M_r = R_{max} \times \sum((1 - e^{-10 \Delta_i})^{0.55} d_i)$$
+$$M_r = R_{max} \times \sum((1 - e^{-10 \Delta_i})^{0.55} d_i)$$
 
-    $$R_{max} = \frac{M_p}{\sum((1 - e^{-10 \Delta_i})^{0.55} d_i)}$$
+$$R_{max} = \frac{M_p}{\sum((1 - e^{-10 \Delta_i})^{0.55} d_i)}$$
 
-6. Now that we have $R_{max}$, we can calculate the other bolt forces:
+* **Step 6**: Now that we have $R_{max}$, we can calculate the other bolt forces:
 
-    $$R_i = R_{max} \times \sum((1 - e^{-10 \Delta_i})^{0.55} d_i)$$
+$$R_i = R_{max} \times \sum((1 - e^{-10 \Delta_i})^{0.55} d_i)$$
 
-7. Now calculate the bolt forces' x and y component to check force equilibrium:
+* **Step 7**: Now calculate the bolt forces' x and y component to check force equilibrium:
 
-    $$cos(\theta) = d_x / d = sin(\theta+90^o)$$
+$$cos(\theta) = d_x / d = sin(\theta+90^o)$$
 
-    $$sin(\theta) = d_y / d = -cos(\theta+90^o)$$
+$$sin(\theta) = d_y / d = -cos(\theta+90^o)$$
 
-    $$R_x = R_i cos(\theta+90^o) = -R_i \frac{d_y}{d}$$
+$$R_x = R_i cos(\theta+90^o) = -R_i \frac{d_y}{d}$$
 
-    $$R_y = R_i sin(\theta+90^o) = R_i \frac{d_x}{d}$$
+$$R_y = R_i sin(\theta+90^o) = R_i \frac{d_x}{d}$$
 
-8. Calculate residual and repeat until a specific tolerance is achieved.
+* **Step 8**: Calculate residual and repeat until a specific tolerance is achieved.
 
-    $$\sum F_x = f_{xx} = P_x - \sum R_{x}$$
+$$\sum F_x = f_{xx} = P_x - \sum R_{x}$$
 
-    $$\sum F_y = f_{yy} = P_y - \sum R_{y}$$
+$$\sum F_y = f_{yy} = P_y - \sum R_{y}$$
 
-    $$\mbox{residual} = \sqrt{(f_{xx})^2 + (f_{yy})^2} < tol$$
+$$\mbox{residual} = \sqrt{(f_{xx})^2 + (f_{yy})^2} < tol$$
 
-9. If equilibrium is not achieved, go back to step 4 with the following modifications
+* **Step 9**: If equilibrium is not achieved, go back to step 4 with the following modifications
 
-    $$a_x = f_{yy} \times \frac{I_z}{M_z N_{bolt}}$$
+$$a_x = f_{yy} \times \frac{I_z}{M_z N_{bolt}}$$
 
-    $$a_y = f_{xx} \times \frac{I_z}{M_z N_{bolt}}$$
+$$a_y = f_{xx} \times \frac{I_z}{M_z N_{bolt}}$$
 
-    $$x_{ICR,i} = x_{ICR,i-1} - a_x$$
+$$x_{ICR,i} = x_{ICR,i-1} - a_x$$
 
-    $$y_{ICR,i} = x_{ICR,i-1} + a_y$$
+$$y_{ICR,i} = x_{ICR,i-1} + a_y$$
 
-10. Once ICR has been located, calculate connection capacity:
+* **Step 10**: Once ICR has been located, calculate connection capacity:
 
-    $$P_{capacity} = C \times R_{capacity}$$
+$$P_{capacity} = C \times R_{capacity}$$
 
-    $$DCR = \frac{P}{P_{capacity}} = \frac{R_{max}}{R_{capacity}}$$
+$$DCR = \frac{P}{P_{capacity}} = \frac{R_{max}}{R_{capacity}}$$
+
+Easy enough to implement. The hard part is making sure you make an even number of sign errors.
+
+
 
 
 

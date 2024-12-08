@@ -1,4 +1,4 @@
-Don't have python experience? No worries. I've pre-computed 90,000 common bolt configurations and tabulated the results. Need to find some Cu coefficient? Just copy the Cu coefficient csv into your spreadsheet and do some VLOOKUP in Excel. No solvers needed!
+The .csv and .json file above contains Cu coefficients for ~90,000 common bolt configurations. Need to find some Cu coefficient for your connection design? Just copy the csv into your spreadsheet and do some VLOOKUP. No solvers needed!
 
 * `Cu Coefficient.csv`
   * **columns**: column of bolts 
