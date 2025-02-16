@@ -25,16 +25,14 @@ Calculate bolt forces with Elastic Method and Instant Center of Rotation (ICR) m
 - [License](#license)
 
 
-
+> [!TIP]
+>
+> Don't have python experience? Fret not, there is a csv file in the [Cu Coefficient Folder](https://github.com/wcfrobert/ezbolt/tree/master/Cu%20Coefficient%20Table)
+ where I pre-computed 90,000 common bolt configurations. If you need to find some C coefficient for your connection design, just copy the table into your spreadsheet and do some XLOOKUP. No solvers needed! 
 
 ## Introduction
 
 EZbolt is a Python program that calculates bolt forces in a bolt group subject to shear and in-plane torsion. It does so using both the Elastic Method and the Instant Center of Rotation (ICR) method as outlined in the AISC steel construction manual. The iterative algorithm for locating the center of rotation is explained in this paper by Donald Brandt: [Rapid Determination of Ultimate Strength of Eccentrically Loaded Bolt Groups.](https://www.aisc.org/Rapid-Determination-of-Ultimate-Strength-of-Eccentrically-Loaded-Bolt-Groups). Unlike the ICR coefficient tables in the steel construction manual which is provided in 15 degree increments, EZbolt can handle **any bolt arrangements, any load orientation, and any eccentricity**.
-
-> [!TIP]
->
-> Don't have python experience? Worry not, you will find a .csv file in the `Cu Coefficient Table` folder. 90,000 common bolt configurations have been pre-computed and tabulated. Need to find some Cu coefficient for your connection design? Just copy the csv into your spreadsheet and do some VLOOKUP. No solvers needed!
-
 
 
 ### Tabulated Cu Coefficients Table
