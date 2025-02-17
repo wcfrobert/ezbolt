@@ -216,9 +216,9 @@ $$I_z = J = I_p = I_x + I_y$$
 
 For in-plane shear, the resulting demand on individual bolts is simply total force divided by number of bolts. We do this about the x and y components separately. Let's call this **direct shear**.
 
-$$v_{dx} = \frac{V_x}{N_{bolts}}$$
+$$v_{dx} = \frac{-V_x}{N_{bolts}}$$
 
-$$v_{dy} = \frac{V_y}{N_{bolts}}$$
+$$v_{dy} = \frac{-V_y}{N_{bolts}}$$
 
 
 In-plane torsion on the bolt group is converted to shear on the individual anchors. Let's call this **torsional shear**. The equations below should be very familiar to most engineers. They're identical to the torsion shear stress equations for beam sections ($$\tau = Tc/J$$). Essentially, bolt force varies linearly radiating from the centroid. Bolts furthest away from the centroid naturally take more force.

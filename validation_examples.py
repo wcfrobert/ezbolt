@@ -20,7 +20,7 @@ ezbolt.plot_ICR(example2)
 
 # Example 3
 example3 = ezbolt.BoltGroup()
-example3.add_bolts(xo=0, yo=0, width=6, height=6, nx=2, ny=2)
-results = example3.solve(Vx=-30, Vy=-40, torsion=120, bolt_capacity=17.9)
+example3.add_bolts(xo=0, yo=0, width=8, height=6, nx=2, ny=2)
+results = example3.solve(Vx=-17.30, Vy=-30, torsion=-180, bolt_capacity=17.9)
 ezbolt.plot_elastic(example3)
 ezbolt.plot_ICR(example3)
