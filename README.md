@@ -13,9 +13,14 @@ Calculate bolt forces with Elastic Method and Instant Center of Rotation (ICR) m
   <img src="https://github.com/wcfrobert/ezbolt/blob/master/doc/demo.gif?raw=true" alt="demo" style="width: 75%;" />
 </div>
 
+> [!TIP]
+>
+> Don't have python experience? Worry not. Inside the [Cu Coefficient Folder](https://github.com/wcfrobert/ezbolt/tree/master/Cu%20Coefficient%20Table), you will find a csv file containing C coefficient of over 90,000 common bolt configurations. Need to find a C coefficient for your connection design? Just copy the table into your spreadsheet and do some XLOOKUP. No solvers needed.
+
 
 - [Introduction](#introduction)
 - [Quick Start](#quick-start)
+- [Validation Examples](#validation-examples)
 - [Installation](#installation)
 - [Usage](#usage)
 - [Theoretical Background - Elastic Method](#theoretical-background---elastic-method)
@@ -25,39 +30,9 @@ Calculate bolt forces with Elastic Method and Instant Center of Rotation (ICR) m
 - [License](#license)
 
 
-> [!TIP]
->
-> Don't have python experience? Fret not, there is a csv file in the [Cu Coefficient Folder](https://github.com/wcfrobert/ezbolt/tree/master/Cu%20Coefficient%20Table)
- where I pre-computed 90,000 common bolt configurations. If you need to find some C coefficient for your connection design, just copy the table into your spreadsheet and do some XLOOKUP. No solvers needed! 
-
 ## Introduction
 
 EZbolt is a Python program that calculates bolt forces in a bolt group subject to shear and in-plane torsion. It does so using both the Elastic Method and the Instant Center of Rotation (ICR) method as outlined in the AISC steel construction manual. The iterative algorithm for locating the center of rotation is explained in this paper by Donald Brandt: [Rapid Determination of Ultimate Strength of Eccentrically Loaded Bolt Groups.](https://www.aisc.org/Rapid-Determination-of-Ultimate-Strength-of-Eccentrically-Loaded-Bolt-Groups). Unlike the ICR coefficient tables in the steel construction manual which is provided in 15 degree increments, EZbolt can handle **any bolt arrangements, any load orientation, and any eccentricity**.
-
-
-### Tabulated Cu Coefficients Table
-
-* `Cu Coefficient.csv`
-  * **columns**: column of bolts 
-  * **rows**: row of bolts 
-  * **eccentricity**: load eccentricity (ex = Mz / Vy) 
-  * **degree**:  load orientation (0 degrees is vertical downward) 
-  * **Ce**: elastic center of rotation coefficient
-  * **Cu**: (plastic) instant center of rotation coefficient
-* `Cu Coefficient.json`
-  * This is a nested dictionary for engineers more comfortable with python. Dictionary lookup is pretty much instant whereas solving a bolt configuration may take ~ 100 ms depending on your computer. 
-  * The key order is as follows: `...[N_columns][N_rows][eccentricity][degree]`["Cu" or "Ce"]. All keys are integers.
-  * For example, `...[1][6][6][0]["Cu"]` returns the Cu for a single column of bolt with 6 rows, vertical force with 6" eccentricity. The returned Cu is 3.55 which matches the AISC tables.
-
-If you would like to generate your own table, try running `generate_cu_table.py`. You can specify the range for each parameter. Be careful though, the number of configurations increase exponentially. Also there's tricky convergence issues if e<0.5 and degree > 80. The cached coefficients have the following range:
-
-* **columns**: 1 to 3
-* **rows**: 2 to 12
-* **eccentricity**: 1 to 36
-* **degree**: 0 to 75
-
-That's 3 * 11 * 76 * 36 = 90,288 iterations. On my Linux desktop with an Intel i7-11700, each iteration took ~ 50 ms. A serial run would take ~75 minutes. Luckily, I was able to implement some nifty parallel processing to bring that the run time to ~5 minutes (running 16 threads).
-
 
 
 
@@ -133,6 +108,17 @@ df3 = results["Instant Center of Rotation Method"]["Bolt Force Table"]
     * `... ["Connection Demand"]`
     * `... ["Bolt Force Table"]`
     * `... ["DCR"]`
+
+
+
+## Validation Examples
+
+[Link to Validation]()
+
+
+
+
+
 
 
 ## Installation
