@@ -15,7 +15,7 @@ Calculate bolt forces with Elastic Method and Instant Center of Rotation (ICR) m
 
 > [!TIP]
 >
-> Don't have python experience? Worry not. Inside the [Cu Coefficient Folder](https://github.com/wcfrobert/ezbolt/tree/master/Cu%20Coefficient%20Table), you will find a csv file containing C coefficient of over 90,000 common bolt configurations. Need to find a C coefficient for your connection design? Just copy the table into your spreadsheet and do some XLOOKUP. No solvers needed.
+> Don't have python experience? Worry not. Inside the [Cu Coefficient Folder](https://github.com/wcfrobert/ezbolt/tree/master/Cu%20Coefficient%20Table), you will find a csv file containing C coefficient of over 90,000 common bolt configurations. Need to find a C coefficient for your connection design? Just copy the table into your spreadsheet and do some XLOOKUP. No solvers needed. Much faster than flipping through the steel manual.
 
 
 - [Introduction](#introduction)
@@ -113,10 +113,7 @@ df3 = results["Instant Center of Rotation Method"]["Bolt Force Table"]
 
 ## Validation Examples
 
-[Link to Validation]()
-
-
-
+[Link to Validation Problems](https://github.com/wcfrobert/ezbolt/tree/master/Cu%20Coefficient%20Table#validation-problems)
 
 
 

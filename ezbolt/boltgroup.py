@@ -211,6 +211,25 @@ class BoltGroup:
 
         Return:
             return_dict             dict:: dictionary containing calculation results
+                                        ...["Elastic Method - Superposition"]
+                                            ...["Bolt Capacity"]
+                                            ...["Bolt Demand"]
+                                            ...["Bolt Force Table"]
+                                            ...["DCR"]
+                                        ...["Elastic Method - Center of Rotation"]
+                                            ...["Center of Rotation"]
+                                            ...["Ce"]
+                                            ...["Bolt Capacity"]
+                                            ...["Bolt Demand"]
+                                            ...["Bolt Force Table"]
+                                            ...["DCR"]
+                                        ...["Instant Center of Rotation Method"]
+                                            ...["ICR"]
+                                            ...["Cu"]
+                                            ...["Bolt Capacity"]
+                                            ...["Bolt Demand"]
+                                            ...["Bolt Force Table"]
+                                            ...["DCR"]
             
         Notes on ecc_method:
             ezbolt simplifies user input into three load vectors at the centroid of the bolt group (Vx, Vy, Mz), this convention is

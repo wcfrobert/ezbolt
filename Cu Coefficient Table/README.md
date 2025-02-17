@@ -2,9 +2,7 @@
 
 ## C Coefficients Tabulated
 
-The .csv and .json files above contain over 90,000 pre-computed C coefficients. Simply import this csv into a spreadsheet, and do some XLOOKUP to find the appropriate C coefficients for your connection design. No solvers necessary! Way faster than referencing the AISC steel construction manual. Try it out yourself. 
-
-The csv file contain the following columns:
+The .csv and .json files above contain over 90,000 pre-computed C coefficients. Simply import this csv into a spreadsheet, and do some XLOOKUP to find the appropriate C coefficients for your connection design. No solvers necessary! Way faster than referencing the AISC steel construction manual. The csv file contain the following columns:
 
 * `Cu Coefficient.csv`
   * **columns**: column of bolts 
@@ -12,7 +10,7 @@ The csv file contain the following columns:
   * **eccentricity**: load eccentricity (ex = Mz / Vy) 
   * **degree**:  load orientation (0 degrees is vertical downward) 
   * **Ce**: elastic center of rotation coefficient
-  * **Cu**: (plastic) instant center of rotation coefficient (values tabulated in AISC steel construction manual)
+  * **Cu**: (plastic) instant center of rotation coefficient
 
 For users more comfortable with programming, I've also provided the same data in json format. 
 
@@ -35,4 +33,10 @@ That's 3 * 11 * 76 * 36 = 90,288 iterations. On my Linux desktop with an Intel i
 ## Validation Problems
 
 
+**Example 1:** A 9" long bolt group with 4 rows, 1 columns, subjected to Py = -40 kips, and Mz = -160 k.in.
 
+
+**Example 2:** A 3" x 9" bolt group with 4 rows, 2 columns, subjected to Px = 80 kips, Py = -80 kips, and Mz = -160 k.in.
+
+
+**Example 3:** A 6" x 6" bolt group with 2 rows, 2 columns, subjected to Px = -30 kips, Py = -40 kips, and Mz = 120 k.in.

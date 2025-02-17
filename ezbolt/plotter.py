@@ -8,7 +8,7 @@ def preview(boltgroup):
     Preview bolt configuration
     """   
     # plot bolts
-    fig, axs = plt.subplots(1,2, gridspec_kw={"width_ratios":[1,3]}, figsize=[10,6], dpi=200)
+    fig, axs = plt.subplots(1,2, gridspec_kw={"width_ratios":[2,3]}, figsize=(11,8.5))
     for bolt in boltgroup.bolts :
         axs[1].plot([bolt.x],[bolt.y], 
                  marker="h",
@@ -29,21 +29,33 @@ def preview(boltgroup):
                      c = "black")
         
     # plot Cog
-    axs[1].plot(boltgroup.x_cg, boltgroup.y_cg, marker="X",c="darkblue",markersize=8,zorder=2,linestyle="none")
-    # axs[1].annotate("CoR",xy=(boltgroup.x_cg, boltgroup.y_cg), xycoords='data', color="red",
-    #              xytext=(5, -5), textcoords='offset points', fontsize=14, va="top", zorder=3)
-    
+    axs[1].plot(boltgroup.x_cg, boltgroup.y_cg, marker="X",c="red",markersize=6,zorder=2,linestyle="none")
     
     # annotation for bolt group properties
-    information_text = "Number of Bolts: {} \n".format(boltgroup.N_bolt) +\
-                        "Centroid: ({:.2f}, {:.2f})\n".format(boltgroup.x_cg, boltgroup.y_cg) +\
-                        "$I_x$ = {:.2f} in4\n".format(boltgroup.Ix) +\
-                        "$I_y$ = {:.2f} in4\n".format(boltgroup.Iy) +\
-                        "J = {:.2f} in4".format(boltgroup.Iz)
-    axs[0].annotate(information_text, (0.1,0.6), xycoords='axes fraction', fontsize=14, va="top", ha="left")
-
+    xo = 0.12
+    yo = 0.65
+    dy = 0.045
+    axs[0].annotate("Bolt Group Properties", 
+                    (xo-0.03,yo), fontweight="bold",xycoords='axes fraction', fontsize=12, va="top", ha="left")
+    axs[0].annotate(r"$N_{{bolts}} = {:.0f}$".format(boltgroup.N_bolt), 
+                    (xo,yo-dy*1), xycoords='axes fraction', fontsize=14, va="top", ha="left")
+    axs[0].annotate(r"$x_{{cg}} = {:.1f} \quad in$".format(boltgroup.x_cg), 
+                    (xo,yo-dy*2), xycoords='axes fraction', fontsize=14, va="top", ha="left")
+    axs[0].annotate(r"$y_{{cg}} = {:.1f} \quad in$".format(boltgroup.y_cg), 
+                    (xo,yo-dy*3), xycoords='axes fraction', fontsize=14, va="top", ha="left")
+    axs[0].annotate(r"$I_{{x}} = {:.1f} \quad in^3$".format(boltgroup.Ix), 
+                    (xo,yo-dy*4), xycoords='axes fraction', fontsize=14, va="top", ha="left")
+    axs[0].annotate(r"$I_{{y}} = {:.1f} \quad in^3$".format(boltgroup.Iy), 
+                    (xo,yo-dy*5), xycoords='axes fraction', fontsize=14, va="top", ha="left")
+    axs[0].annotate(r"$J = {:.1f} \quad in^3$".format(boltgroup.Iz), 
+                    (xo,yo-dy*6), xycoords='axes fraction', fontsize=14, va="top", ha="left")
+    
     # styling
-    axs[0].axis("off")
+    axs[1].grid()
+    axs[1].set_axisbelow(True)
+    axs[1].grid(linestyle='--')
+    axs[0].set_xticks([])
+    axs[0].set_yticks([])
     fig.suptitle("Bolt Group Preview", fontweight="bold", fontsize=16)
     plt.tight_layout()
     
@@ -64,7 +76,7 @@ def plot_elastic(boltgroup, annotate_force=True):
     """
     Plot bolt forces from elastic method
     """
-    fig, axs = plt.subplots(1,2, gridspec_kw={"width_ratios":[1.3,4]}, figsize=[10,6], dpi=200)
+    fig, axs = plt.subplots(1,2, gridspec_kw={"width_ratios":[2,3]}, figsize=[11,8.5])
     
     # arrow size scaling set up. 
     # Larrow_max is set to 20% of x and y bound. Qarrow_max the associated amplitude. 
@@ -76,21 +88,41 @@ def plot_elastic(boltgroup, annotate_force=True):
     ARROWWIDTH = 0.03
     
     # text box showing applied load
-    information_text = "$V_x$ = {:.2f} k\n".format(boltgroup.Vx) +\
-                        "$V_y$ = {:.2f} k\n".format(boltgroup.Vy) +\
-                        "$M_z$ = {:.2f} k.in\n\n".format(boltgroup.torsion) +\
-                        "Bolt Demand = {:.2f} k\n".format(boltgroup.bolt_demand) +\
-                        "Bolt Capacity = {:.2f} k\n".format(boltgroup.bolt_capacity) +\
-                        "D/C Ratio = {:.2f}".format(boltgroup.bolt_demand / boltgroup.bolt_capacity)
-    axs[0].annotate(information_text,
-                 xy=(0,0), 
-                 xytext=(0.1,0.7), 
-                 textcoords='axes fraction', 
-                 fontsize=14, 
-                 c="black", 
-                 ha="left", 
-                 va="top",
-                 zorder=2)
+    xo = 0.12
+    yo = 0.85
+    dy = 0.045
+    axs[0].annotate("Bolt Group Properties", 
+                    (xo-0.03,yo), fontweight="bold",xycoords='axes fraction', fontsize=12, va="top", ha="left")
+    axs[0].annotate(r"$N_{{bolts}} = {:.0f}$".format(boltgroup.N_bolt), 
+                    (xo,yo-dy*1), xycoords='axes fraction', fontsize=14, va="top", ha="left")
+    axs[0].annotate(r"$x_{{cg}} = {:.1f} \quad in$".format(boltgroup.x_cg), 
+                    (xo,yo-dy*2), xycoords='axes fraction', fontsize=14, va="top", ha="left")
+    axs[0].annotate(r"$y_{{cg}} = {:.1f} \quad in$".format(boltgroup.y_cg), 
+                    (xo,yo-dy*3), xycoords='axes fraction', fontsize=14, va="top", ha="left")
+    axs[0].annotate(r"$I_{{x}} = {:.1f} \quad in^3$".format(boltgroup.Ix), 
+                    (xo,yo-dy*4), xycoords='axes fraction', fontsize=14, va="top", ha="left")
+    axs[0].annotate(r"$I_{{y}} = {:.1f} \quad in^3$".format(boltgroup.Iy), 
+                    (xo,yo-dy*5), xycoords='axes fraction', fontsize=14, va="top", ha="left")
+    axs[0].annotate(r"$J = {:.1f} \quad in^3$".format(boltgroup.Iz), 
+                    (xo,yo-dy*6), xycoords='axes fraction', fontsize=14, va="top", ha="left")
+    
+    axs[0].annotate("Applied Loading", 
+                    (xo-0.03,yo-dy*7), fontweight="bold",xycoords='axes fraction', fontsize=12, va="top", ha="left")
+    axs[0].annotate(r"$V_x = {:.1f} \quad kips$".format(boltgroup.Vx), 
+                    (xo,yo-dy*8), xycoords='axes fraction', fontsize=14, va="top", ha="left")
+    axs[0].annotate(r"$V_y = {:.1f} \quad kips$".format(boltgroup.Vy), 
+                    (xo,yo-dy*9), xycoords='axes fraction', fontsize=14, va="top", ha="left")
+    axs[0].annotate(r"$M_z = {:.1f} \quad k.in$".format(boltgroup.torsion), 
+                    (xo,yo-dy*10), xycoords='axes fraction', fontsize=14, va="top", ha="left")
+    
+    axs[0].annotate("Results", 
+                    (xo-0.03,yo-dy*11), fontweight="bold",xycoords='axes fraction', fontsize=12, va="top", ha="left")
+    axs[0].annotate(r"Bolt Demand = {:.2f} kips".format(boltgroup.bolt_demand), 
+                    (xo,yo-dy*12), xycoords='axes fraction', fontsize=14, va="top", ha="left")
+    axs[0].annotate(r"Bolt Capacity = {:.2f} kips".format(boltgroup.bolt_capacity), 
+                    (xo,yo-dy*13), xycoords='axes fraction', fontsize=14, va="top", ha="left")
+    axs[0].annotate(r"D/C ratio = {:.2f}".format(boltgroup.bolt_demand / boltgroup.bolt_capacity), 
+                    (xo,yo-dy*14), xycoords='axes fraction', fontsize=14, va="top", ha="left")
     
     # plot bolts
     for bolt in boltgroup.bolts:
@@ -108,7 +140,7 @@ def plot_elastic(boltgroup, annotate_force=True):
                          xycoords='data', 
                          xytext=(0, -16), 
                          textcoords='offset points', 
-                         fontsize=8, 
+                         fontsize=10, 
                          c="black", 
                          ha="center",
                          va="top",
@@ -116,7 +148,7 @@ def plot_elastic(boltgroup, annotate_force=True):
                          bbox=dict(boxstyle='round', facecolor='white'))
         
     # plot Cog
-    axs[1].plot(boltgroup.x_cg, boltgroup.y_cg, marker="X",c="darkblue",markersize=8,zorder=2,linestyle="none")
+    axs[1].plot(boltgroup.x_cg, boltgroup.y_cg, marker="X",c="red",markersize=6,zorder=2,linestyle="none")
 
     # bolts reaction arrows
     for bolt in boltgroup.bolts:
@@ -166,7 +198,11 @@ def plot_elastic(boltgroup, annotate_force=True):
         
     # styling
     fig.suptitle("Elastic Method - Superposition", fontweight="bold", fontsize=16)
-    axs[0].axis("off")
+    axs[1].grid()
+    axs[1].set_axisbelow(True)
+    axs[1].grid(linestyle='--')
+    axs[0].set_xticks([])
+    axs[0].set_yticks([])
     
     # set axis limit, first use auto, then expand by 10% to not clip annotations
     axs[1].set_aspect('equal', 'datalim')
@@ -194,7 +230,7 @@ def plot_ECR(boltgroup, annotate_force=True):
                      fontsize=14)
         return fig
     
-    fig, axs = plt.subplots(1,2, gridspec_kw={"width_ratios":[1.5,4]}, figsize=[10,6])
+    fig, axs = plt.subplots(1,2, gridspec_kw={"width_ratios":[2,3]}, figsize=[11,8.5])
     # arrow size scaling set up. 
     # Larrow_max is set to 20% of x and y bound. Qarrow_max the associated amplitude. 
     # Therefore, L = (q/Qarrow_max) * Larrow_max
@@ -205,25 +241,46 @@ def plot_ECR(boltgroup, annotate_force=True):
     ARROWWIDTH = 0.03
     
     # text box showing applied load
-    unit = "k" if boltgroup.ecc!=0 else "k.in"
-    information_text = "$V_x$ = {:.2f} k\n".format(boltgroup.Vx) +\
-                        "$V_y$ = {:.2f} k\n".format(boltgroup.Vy) +\
-                        "$M_z$ = {:.2f} k.in\n\n".format(boltgroup.torsion) +\
-                        "ECR: ({:.2f}, {:.2f})\n".format(boltgroup.ECR_x, boltgroup.ECR_y) +\
-                        "$C_e$: {:.2f}\n".format(boltgroup.Ce) +\
-                        "$R_{{ult}}$: {:.2f} k\n".format(boltgroup.bolt_capacity) +\
-                        "Connection Capacity = {:.2f} {}\n".format(boltgroup.P_capacity,unit) +\
-                        "Connection Demand = {:.2f} {}\n".format(boltgroup.P_demand,unit) +\
-                        "D/C Ratio = {:.2f}".format(abs(boltgroup.P_demand / boltgroup.P_capacity))
-    axs[0].annotate(information_text,
-                 xy=(0,0), 
-                 xytext=(0.1,0.8), 
-                 textcoords='axes fraction', 
-                 fontsize=14, 
-                 c="black", 
-                 ha="left", 
-                 va="top",
-                 zorder=2)
+    xo = 0.12
+    yo = 0.95
+    dy = 0.045
+    unit = "kips" if boltgroup.ecc!=0 else "k.in"
+    axs[0].annotate("Bolt Group Properties", 
+                    (xo-0.03,yo), fontweight="bold",xycoords='axes fraction', fontsize=12, va="top", ha="left")
+    axs[0].annotate(r"$N_{{bolts}} = {:.0f}$".format(boltgroup.N_bolt), 
+                    (xo,yo-dy*1), xycoords='axes fraction', fontsize=14, va="top", ha="left")
+    axs[0].annotate(r"$x_{{cg}} = {:.1f} \quad in$".format(boltgroup.x_cg), 
+                    (xo,yo-dy*2), xycoords='axes fraction', fontsize=14, va="top", ha="left")
+    axs[0].annotate(r"$y_{{cg}} = {:.1f} \quad in$".format(boltgroup.y_cg), 
+                    (xo,yo-dy*3), xycoords='axes fraction', fontsize=14, va="top", ha="left")
+    axs[0].annotate(r"$I_{{x}} = {:.1f} \quad in^3$".format(boltgroup.Ix), 
+                    (xo,yo-dy*4), xycoords='axes fraction', fontsize=14, va="top", ha="left")
+    axs[0].annotate(r"$I_{{y}} = {:.1f} \quad in^3$".format(boltgroup.Iy), 
+                    (xo,yo-dy*5), xycoords='axes fraction', fontsize=14, va="top", ha="left")
+    axs[0].annotate(r"$J = {:.1f} \quad in^3$".format(boltgroup.Iz), 
+                    (xo,yo-dy*6), xycoords='axes fraction', fontsize=14, va="top", ha="left")
+    
+    axs[0].annotate("Applied Loading", 
+                    (xo-0.03,yo-dy*7), fontweight="bold",xycoords='axes fraction', fontsize=12, va="top", ha="left")
+    axs[0].annotate(r"$V_x = {:.1f} \quad kips$".format(boltgroup.Vx), 
+                    (xo,yo-dy*8), xycoords='axes fraction', fontsize=14, va="top", ha="left")
+    axs[0].annotate(r"$V_y = {:.1f} \quad kips$".format(boltgroup.Vy), 
+                    (xo,yo-dy*9), xycoords='axes fraction', fontsize=14, va="top", ha="left")
+    axs[0].annotate(r"$M_z = {:.1f} \quad k.in$".format(boltgroup.torsion), 
+                    (xo,yo-dy*10), xycoords='axes fraction', fontsize=14, va="top", ha="left")
+    
+    axs[0].annotate("Results", 
+                    (xo-0.03,yo-dy*11), fontweight="bold",xycoords='axes fraction', fontsize=12, va="top", ha="left")
+    axs[0].annotate(r"$ECR = ({:.2f}, {:.2f})$".format(boltgroup.ECR_x, boltgroup.ECR_y), 
+                    (xo,yo-dy*12), xycoords='axes fraction', fontsize=14, va="top", ha="left")
+    axs[0].annotate(r"$C_e = {:.2f}$".format(boltgroup.Ce), 
+                    (xo,yo-dy*13), xycoords='axes fraction', fontsize=14, va="top", ha="left")
+    axs[0].annotate(r"Connection Capacity = {:.2f} {}".format(boltgroup.P_capacity, unit), 
+                    (xo,yo-dy*14), xycoords='axes fraction', fontsize=14, va="top", ha="left")
+    axs[0].annotate(r"Connection Demand = {:.2f} {}".format(boltgroup.P_demand, unit), 
+                    (xo,yo-dy*15), xycoords='axes fraction', fontsize=14, va="top", ha="left")
+    axs[0].annotate(r"D/C Ratio = {:.2f}".format(boltgroup.P_demand / boltgroup.P_capacity), 
+                    (xo,yo-dy*16), xycoords='axes fraction', fontsize=14, va="top", ha="left")
     
     # plot bolts
     for bolt in boltgroup.bolts:
@@ -241,21 +298,18 @@ def plot_ECR(boltgroup, annotate_force=True):
                          xycoords='data', 
                          xytext=(0, -16), 
                          textcoords='offset points', 
-                         fontsize=8, 
+                         fontsize=10, 
                          c="black", 
                          ha="center",
                          va="top",
                          zorder=1,
                          bbox=dict(boxstyle='round', facecolor='white'))
     # plot Cog
-    axs[1].plot(boltgroup.x_cg, boltgroup.y_cg, marker="X",c="darkblue",markersize=8,zorder=2,linestyle="none")
+    axs[1].plot(boltgroup.x_cg, boltgroup.y_cg, marker="X",c="red",markersize=6,zorder=2,linestyle="none")
 
     # plot ECR
     if boltgroup.torsion != 0:
         axs[1].plot(boltgroup.ECR_x, boltgroup.ECR_y, marker="*",c="red",markersize=14,zorder=3,linestyle="none")
-        # axs[1].annotate("ECR",
-        #              xy=(boltgroup.ECR_x, boltgroup.ECR_y), xycoords='data', color="red",
-        #              xytext=(-5, -5), textcoords='offset points', fontsize=16, va="top", ha="right")
     
     # bolts reaction arrows
     for bolt in boltgroup.bolts:
@@ -305,7 +359,11 @@ def plot_ECR(boltgroup, annotate_force=True):
         
     # styling
     fig.suptitle("Elastic Method - Center of Rotation", fontweight="bold", fontsize=16)
-    axs[0].axis("off")
+    axs[1].grid()
+    axs[1].set_axisbelow(True)
+    axs[1].grid(linestyle='--')
+    axs[0].set_xticks([])
+    axs[0].set_yticks([])
     
     # set axis limit, first use auto, then expand by 10% to not clip annotations
     axs[1].set_aspect('equal', 'datalim')
@@ -334,7 +392,7 @@ def plot_ICR(boltgroup, annotate_force=True):
                      fontsize=14)
         return fig
     
-    fig, axs = plt.subplots(1,2, gridspec_kw={"width_ratios":[1.5,4]}, figsize=[10,6], dpi=200)
+    fig, axs = plt.subplots(1,2, gridspec_kw={"width_ratios":[2,3]}, figsize=[11,8.5])
     # arrow size scaling set up. 
     # Larrow_max is set to 20% of x and y bound. Qarrow_max the associated amplitude. 
     # Therefore, L = (q/Qarrow_max) * Larrow_max
@@ -345,27 +403,52 @@ def plot_ICR(boltgroup, annotate_force=True):
     #Qarrow_max = boltgroup.V_resultant
     ARROWWIDTH = 0.03
     
+
+
     # text box showing applied load
-    unit = "k" if boltgroup.ecc!=0 else "k.in"
-    information_text = "P = {:.2f} k\n".format(boltgroup.V_resultant) +\
-                        "$\\theta$ = {:.2f} deg\n".format(boltgroup.theta) +\
-                        "$e_x$ = {:.2f} in\n".format(boltgroup.ecc_x) +\
-                        "$e_y$ = {:.2f} in\n\n".format(boltgroup.ecc_y) +\
-                        "ICR: ({:.2f}, {:.2f})\n".format(boltgroup.ICR_x[-1], boltgroup.ICR_y[-1]) +\
-                        "$C_u$: {:.2f}\n".format(boltgroup.Cu[-1]) +\
-                        "$R_{{ult}}$: {:.2f} k\n".format(boltgroup.bolt_capacity) +\
-                        "Connection Capacity = {:.2f} {}\n".format(boltgroup.P_capacity_ICR,unit) +\
-                        "Connection Demand = {:.2f} {}\n".format(boltgroup.P_demand_ICR,unit) +\
-                        "D/C Ratio = {:.2f}".format(abs(boltgroup.P_demand_ICR / boltgroup.P_capacity_ICR))
-    axs[0].annotate(information_text,
-                 xy=(0,0), 
-                 xytext=(0.1,0.8), 
-                 textcoords='axes fraction', 
-                 fontsize=14, 
-                 c="black", 
-                 ha="left", 
-                 va="top",
-                 zorder=2)
+    xo = 0.12
+    yo = 0.95
+    dy = 0.045
+    unit = "kips" if boltgroup.ecc!=0 else "k.in"
+    axs[0].annotate("Bolt Group Properties", 
+                    (xo-0.03,yo), fontweight="bold",xycoords='axes fraction', fontsize=12, va="top", ha="left")
+    axs[0].annotate(r"$N_{{bolts}} = {:.0f}$".format(boltgroup.N_bolt), 
+                    (xo,yo-dy*1), xycoords='axes fraction', fontsize=14, va="top", ha="left")
+    axs[0].annotate(r"$x_{{cg}} = {:.1f} \quad in$".format(boltgroup.x_cg), 
+                    (xo,yo-dy*2), xycoords='axes fraction', fontsize=14, va="top", ha="left")
+    axs[0].annotate(r"$y_{{cg}} = {:.1f} \quad in$".format(boltgroup.y_cg), 
+                    (xo,yo-dy*3), xycoords='axes fraction', fontsize=14, va="top", ha="left")
+    axs[0].annotate(r"$I_{{x}} = {:.1f} \quad in^3$".format(boltgroup.Ix), 
+                    (xo,yo-dy*4), xycoords='axes fraction', fontsize=14, va="top", ha="left")
+    axs[0].annotate(r"$I_{{y}} = {:.1f} \quad in^3$".format(boltgroup.Iy), 
+                    (xo,yo-dy*5), xycoords='axes fraction', fontsize=14, va="top", ha="left")
+    axs[0].annotate(r"$J = {:.1f} \quad in^3$".format(boltgroup.Iz), 
+                    (xo,yo-dy*6), xycoords='axes fraction', fontsize=14, va="top", ha="left")
+    
+    axs[0].annotate("Applied Loading", 
+                    (xo-0.03,yo-dy*7), fontweight="bold",xycoords='axes fraction', fontsize=12, va="top", ha="left")
+    axs[0].annotate(r"$P = {:.1f} \quad kips$".format(boltgroup.V_resultant), 
+                    (xo,yo-dy*8), xycoords='axes fraction', fontsize=14, va="top", ha="left")
+    axs[0].annotate(r"$\theta = {:.1f} \quad degs$".format(boltgroup.theta), 
+                    (xo,yo-dy*9), xycoords='axes fraction', fontsize=14, va="top", ha="left")
+    axs[0].annotate(r"$e_x = {:.2f} \quad in$".format(boltgroup.ecc_x), 
+                    (xo,yo-dy*10), xycoords='axes fraction', fontsize=14, va="top", ha="left")
+    axs[0].annotate(r"$e_y = {:.2f} \quad in$".format(boltgroup.ecc_y), 
+                    (xo,yo-dy*11), xycoords='axes fraction', fontsize=14, va="top", ha="left")
+    
+    axs[0].annotate("Results", 
+                    (xo-0.03,yo-dy*12), fontweight="bold",xycoords='axes fraction', fontsize=12, va="top", ha="left")
+    axs[0].annotate(r"$ICR = ({:.2f}, {:.2f})$".format(boltgroup.ICR_x[-1], boltgroup.ICR_y[-1]), 
+                    (xo,yo-dy*13), xycoords='axes fraction', fontsize=14, va="top", ha="left")
+    axs[0].annotate(r"$C_u = {:.2f}$".format(boltgroup.Cu[-1]), 
+                    (xo,yo-dy*14), xycoords='axes fraction', fontsize=14, va="top", ha="left")
+    axs[0].annotate(r"Connection Capacity = {:.2f} {}".format(boltgroup.P_capacity_ICR, unit), 
+                    (xo,yo-dy*15), xycoords='axes fraction', fontsize=14, va="top", ha="left")
+    axs[0].annotate(r"Connection Demand = {:.2f} {}".format(boltgroup.P_demand_ICR, unit), 
+                    (xo,yo-dy*16), xycoords='axes fraction', fontsize=14, va="top", ha="left")
+    axs[0].annotate(r"D/C Ratio = {:.2f}".format(abs(boltgroup.P_demand_ICR / boltgroup.P_capacity_ICR)), 
+                    (xo,yo-dy*17), xycoords='axes fraction', fontsize=14, va="top", ha="left")
+    
     
     # plot bolts
     for bolt in boltgroup.bolts:
@@ -383,14 +466,14 @@ def plot_ICR(boltgroup, annotate_force=True):
                          xycoords='data', 
                          xytext=(0, -16), 
                          textcoords='offset points', 
-                         fontsize=8, 
+                         fontsize=10, 
                          c="black", 
                          ha="center",
                          va="top",
                          zorder=1,
                          bbox=dict(boxstyle='round', facecolor='white'))
     # plot Cog
-    axs[1].plot(boltgroup.x_cg, boltgroup.y_cg, marker="X",c="darkblue",markersize=8,zorder=2,linestyle="none")
+    axs[1].plot(boltgroup.x_cg, boltgroup.y_cg, marker="X",c="darkblue",markersize=6,zorder=2,linestyle="none")
 
     # plot ICR
     if boltgroup.torsion != 0:
@@ -447,7 +530,11 @@ def plot_ICR(boltgroup, annotate_force=True):
         
     # styling
     fig.suptitle("Instant Center of Rotation Method", fontweight="bold", fontsize=16)
-    axs[0].axis("off")
+    axs[1].grid()
+    axs[1].set_axisbelow(True)
+    axs[1].grid(linestyle='--')
+    axs[0].set_xticks([])
+    axs[0].set_yticks([])
     
     # set axis limit, first use auto, then expand by 10% to not clip annotations
     axs[1].set_aspect('equal', 'datalim')
