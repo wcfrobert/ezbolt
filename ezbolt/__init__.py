@@ -4,7 +4,7 @@ It does so using three methods: elastic method, elastic center of rotation metho
 and the instant center of rotation method.
 """
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 __author__ = "Robert Wang"
 __license__ = "MIT"
 
