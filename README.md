@@ -71,16 +71,19 @@ df3 = results["Instant Center of Rotation Method"]["Bolt Force Table"]
 <div align="center">
   <img src="https://github.com/wcfrobert/ezbolt/blob/master/doc/preview.png?raw=true" alt="demo" style="width: 50%;" />
 </div>
+
 `ezbolt.plot_elastic()` shows bolt force calculated from elastic method.
 
 <div align="center">
   <img src="https://github.com/wcfrobert/ezbolt/blob/master/doc/elasticmethod.png?raw=true" alt="demo" style="width: 50%;" />
 </div>
+
 `ezbolt.plot_ECR()` shows bolt forces calculated from elastic center of rotation (ECR) method.
 
 <div align="center">
   <img src="https://github.com/wcfrobert/ezbolt/blob/master/doc/ECRmethod.png?raw=true" alt="demo" style="width: 50%;" />
 </div>
+
 `ezbolt.plot_ICR()` shows bolt forces calculated from instant center of rotation (ICR) method.
 
 <div align="center">
