@@ -2,17 +2,17 @@
 
 ## C Coefficients Tabulated
 
-The .csv and .json files above contain over 90,000 pre-computed C coefficients. Simply import this csv into a spreadsheet, and do some XLOOKUP to find the appropriate C coefficients for your connection design. No solvers necessary and way faster than looking up the AISC steel construction manual. The csv file contain the following columns:
+The .csv and .json files above contain over 90,000 pre-computed C coefficients. Simply import this csv into a spreadsheet, and do some XLOOKUP to find the appropriate C coefficients. No solvers necessary! The csv file contain the following columns. Note all bolts are assumed to have 3" spacing.
 
 * `Cu Coefficient.csv`
   * **columns**: column of bolts 
   * **rows**: row of bolts 
-  * **eccentricity**: load eccentricity (ex = Mz / Vy) 
+  * **eccentricity**: horizontal load eccentricity (ex = Mz / Vy) 
   * **degree**:  load orientation (0 degrees is vertical downward) 
   * **Ce**: elastic center of rotation coefficient
   * **Cu**: (plastic) instant center of rotation coefficient
 
-For users more comfortable with programming, I've also provided the same data in json format. 
+I've also provided the same data in json format. 
 
 * `Cu Coefficient.json`
   * The key order is as follows: `...[N_columns][N_rows][eccentricity][degree]`["Cu" or "Ce"]. All keys are integers.

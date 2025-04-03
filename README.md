@@ -15,7 +15,7 @@ Calculate bolt forces with Elastic Method and Instant Center of Rotation (ICR) m
 
 > [!TIP]
 >
-> Don't have python experience? Worry not. Inside the [Cu Coefficient Folder](https://github.com/wcfrobert/ezbolt/tree/master/Cu%20Coefficient%20Table), you will find a csv file containing C coefficient of over 90,000 common bolt configurations. Need to find a C coefficient for your connection design? Just copy the table into your spreadsheet and do some XLOOKUP. No solvers needed. Much faster than flipping through the steel manual.
+> Inside the [Cu Coefficient Folder](https://github.com/wcfrobert/ezbolt/tree/master/Cu%20Coefficient%20Table), you will find a csv file containing C coefficient of over 90,000 common bolt configurations. Just copy the table into your spreadsheet and do a few XLOOKUP. No solvers needed!
 
 
 - [Introduction](#introduction)
@@ -479,6 +479,7 @@ Easy enough to implement. The hard part is making sure you make an even number o
 
 * Units are in (kip, in) unless otherwise noted
 * EZbolt only calculates connection capacity with respect to bolt shear. Other limit states - such as plate rupture, block shear, bearing and tearout - are not considered.
+* This is not enterprise-grade software. Please do NOT use it for work. Users assume full risk and responsibility for verifying that the results are accurate.
 
 
 
